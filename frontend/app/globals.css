@@ -1,0 +1,99 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@font-face {
+  font-family: "Inter";
+  src: url("/fonts/Inter.ttf") format("truetype");
+  font-weight: 100 900;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: "Inter";
+  src: url("/fonts/Inter-Italic.ttf") format("truetype");
+  font-weight: 100 900;
+  font-style: italic;
+  font-display: swap;
+}
+@font-face {
+  font-family: "Lora";
+  src: url("/fonts/Lora.ttf") format("truetype");
+  font-weight: 400 700;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: "Space Mono";
+  src: url("/fonts/SpaceMono-Regular.ttf") format("truetype");
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: "Space Mono";
+  src: url("/fonts/SpaceMono-Bold.ttf") format("truetype");
+  font-weight: 700;
+  font-style: normal;
+  font-display: swap;
+}
+
+:root {
+  color: #211b16;
+  background: #fbf7ef;
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  @apply bg-cream text-ink antialiased;
+}
+
+::selection {
+  background: #d95d39;
+  color: #fbf7ef;
+}
+
+@layer components {
+  .container-x {
+    @apply mx-auto w-full max-w-7xl px-5 sm:px-8;
+  }
+  .display-title {
+    @apply font-display text-4xl leading-[1.05] tracking-tight sm:text-5xl lg:text-6xl;
+  }
+  .eyebrow {
+    @apply font-mono text-[11px] uppercase tracking-[0.24em] text-clay;
+  }
+  .field {
+    @apply w-full rounded-xl border border-ink/15 bg-white px-4 py-3 text-sm outline-none transition focus:border-clay focus:ring-2 focus:ring-clay/20;
+  }
+  .label {
+    @apply mb-1.5 block text-xs font-semibold uppercase tracking-wider text-muted;
+  }
+  .card {
+    @apply rounded-3xl border border-ink/10 bg-white shadow-card;
+  }
+  .link-underline {
+    @apply relative after:absolute after:-bottom-1 after:left-0 after:h-px after:w-0 after:bg-current after:transition-all hover:after:w-full;
+  }
+}
+
+.editor-canvas > .canvas-container {
+  width: 100% !important;
+  height: 100% !important;
+}
+
+.editor-canvas canvas {
+  width: 100% !important;
+  height: 100% !important;
+  border-radius: 2px;
+}
+
+.editor-grid-bg {
+  background-image:
+    linear-gradient(to right, rgba(33, 27, 22, 0.07) 1px, transparent 1px),
+    linear-gradient(to bottom, rgba(33, 27, 22, 0.07) 1px, transparent 1px);
+  background-size: 24px 24px;
+}
