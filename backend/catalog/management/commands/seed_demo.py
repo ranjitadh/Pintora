@@ -988,7 +988,7 @@ class Command(BaseCommand):
             design_id=design.id,
             printing_method_id=method.id if method else None,
             quantity=2,
-        )
+        )[0]
         try:
             checkout_cart(
                 user,

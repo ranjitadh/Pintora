@@ -6,15 +6,24 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   ArrowLeft,
   ArrowRight,
+  Check,
+  ChevronDown,
+  ChevronLeft,
+  ChevronRight,
   Circle,
   Download,
+  Grid,
   Image as ImageIcon,
   Layers,
+  Layout,
   Loader2,
+  Maximize,
+  Minimize,
   Minus,
   Plus,
   Redo2,
   RotateCcw,
+  RotateCw,
   Save,
   Shapes,
   ShoppingBag,
@@ -25,6 +34,7 @@ import {
   Type,
   Undo2,
   UploadCloud,
+  X,
 } from "lucide-react";
 import { api, errorMessage, mediaUrl } from "@/lib/api";
 import { notifyCart, useAuth } from "@/lib/auth";
@@ -32,7 +42,7 @@ import type { Cart, Clipart, Design, FontResource, GeneratedFile, Product, Quote
 import { cn, money } from "@/lib/utils";
 import { Alert, Button } from "@/components/ui";
 
-type Tool = "text" | "upload" | "clipart" | "templates" | "layers";
+type Tool = "text" | "upload" | "clipart" | "templates" | "layers" | "products" | "elements" | "images";
 
 interface EditorProps {
   product: Product;
@@ -49,11 +59,14 @@ interface StageState {
 }
 
 const COLORS = ["#211b16", "#fbf7ef", "#d95d39", "#65714c", "#f2c96b", "#2f5d8a", "#8b4a6b", "#ffffff"];
+
 const TOOL_ITEMS: { id: Tool; label: string; icon: any }[] = [
-  { id: "text", label: "Text", icon: Type },
-  { id: "upload", label: "Upload", icon: UploadCloud },
-  { id: "clipart", label: "Clipart", icon: Sparkles },
+  { id: "products", label: "Product", icon: Layout },
   { id: "templates", label: "Templates", icon: Shapes },
+  { id: "text", label: "Text", icon: Type },
+  { id: "elements", label: "Elements", icon: Grid },
+  { id: "images", label: "Images", icon: ImageIcon },
+  { id: "upload", label: "Uploads", icon: UploadCloud },
   { id: "layers", label: "Layers", icon: Layers },
 ];
 
@@ -105,7 +118,7 @@ function scaleCanvasJson(json: any, area: any) {
 
 export function DesignEditor({ product, initialDesign, initialTemplate, initialVariantId, initialMethodId }: EditorProps) {
   const router = useRouter();
-  const { user } = useAuth();
+  const { user, cartCount } = useAuth();
   const canvasElRef = useRef<HTMLCanvasElement | null>(null);
   const fabricRef = useRef<any>(null);
   const fabricLibRef = useRef<any>(null);
@@ -124,7 +137,8 @@ export function DesignEditor({ product, initialDesign, initialTemplate, initialV
   const [savedAt, setSavedAt] = useState<Date | null>(null);
   const [error, setError] = useState("");
   const [notice, setNotice] = useState("");
-  const [tool, setTool] = useState<Tool>("text");
+  const [tool, setTool] = useState<Tool>("products");
+  const [panelOpen, setPanelOpen] = useState(false);
   const [layers, setLayers] = useState<any[]>([]);
   const [selected, setSelected] = useState<any>(null);
   const [historyTick, setHistoryTick] = useState(0);
@@ -156,6 +170,7 @@ export function DesignEditor({ product, initialDesign, initialTemplate, initialV
   const [quote, setQuote] = useState<Quote | null>(null);
   const [adding, setAdding] = useState(false);
   const [downloading, setDownloading] = useState(false);
+  const [showMockupPreview, setShowMockupPreview] = useState(false);
 
   const activeStage = useMemo(
     () => product.stages.find((stage) => stage.id === activeStageId) || product.stages[0],
@@ -421,13 +436,29 @@ export function DesignEditor({ product, initialDesign, initialTemplate, initialV
     persistCurrent();
     const stages: Record<string, any> = {};
     product.stages.forEach((stage) => {
-      if (stageStates.current[stage.id]) stages[stage.id] = stageStates.current[stage.id].last;
+      if (stageStates.current[stage.id]) {
+        const stageJson = { ...stageStates.current[stage.id].last };
+        if (stageJson.width === undefined) {
+          stageJson.width = stage.print_area?.width_px || 1000;
+        }
+        if (stageJson.height === undefined) {
+          stageJson.height = stage.print_area?.height_px || 1000;
+        }
+        stages[stage.id] = stageJson;
+      }
     });
+    const activeStage = product.stages.find((s) => s.id === activeStageRef.current);
+    const area = activeStage?.print_area;
     return {
       product: product.id,
       stage: activeStageRef.current,
       name: nameRef.current || `${product.name} design`,
-      canvas_json: { stages, activeStage: activeStageRef.current },
+      canvas_json: {
+        stages,
+        activeStage: activeStageRef.current,
+        width: area?.width_px || 1000,
+        height: area?.height_px || 1000,
+      },
       metadata: { stage: activeStageRef.current },
     };
   }, [persistCurrent, product]);
@@ -707,7 +738,7 @@ export function DesignEditor({ product, initialDesign, initialTemplate, initialV
     }
   };
 
-  const handleDownload = async () => {
+  const handleDownload = async (fileType: "png" | "svg" | "pdf" = "png") => {
     if (!user) {
       router.push(`/login?next=${encodeURIComponent(window.location.pathname + window.location.search)}`);
       return;
@@ -717,9 +748,10 @@ export function DesignEditor({ product, initialDesign, initialTemplate, initialV
     try {
       const id = designIdRef.current || (await save(false));
       if (!id) return;
-      const file = await api.post<GeneratedFile>("/exports/create/", { design: id, file_type: "png", dpi: 150 });
+      const dpi = fileType === "png" ? 150 : 300;
+      const file = await api.post<GeneratedFile>("/exports/create/", { design: id, file_type: fileType, dpi });
       if (file.url) window.open(mediaUrl(file.url), "_blank");
-      setNotice("Print-ready PNG generated.");
+      setNotice(`Print-ready ${fileType.toUpperCase()} generated.`);
     } catch (err) {
       setError(errorMessage(err));
     } finally {
@@ -732,20 +764,23 @@ export function DesignEditor({ product, initialDesign, initialTemplate, initialV
   const canRedo = !!state && state.redo.length > 0;
   const isTextSelected = !!selected && ["i-text", "text", "textbox"].includes(selected.type);
 
+  const activeStageObj = product.stages.find((stage) => stage.id === activeStageId);
+  const activePrintArea = activeStageObj?.print_area;
+
   const stageBox =
-    activeStage && activeArea
+    activeStageObj && activePrintArea
       ? {
-          left: `${(activeArea.mockup_x / (activeStage.mockup_width || 1000)) * 100}%`,
-          top: `${(activeArea.mockup_y / (activeStage.mockup_height || 1000)) * 100}%`,
-          width: `${(activeArea.mockup_width / (activeStage.mockup_width || 1000)) * 100}%`,
-          height: `${(activeArea.mockup_height / (activeStage.mockup_height || 1000)) * 100}%`,
+          left: `${(activePrintArea.mockup_x / (activeStageObj.mockup_width || 1000)) * 100}%`,
+          top: `${(activePrintArea.mockup_y / (activeStageObj.mockup_height || 1000)) * 100}%`,
+          width: `${(activePrintArea.mockup_width / (activeStageObj.mockup_width || 1000)) * 100}%`,
+          height: `${(activePrintArea.mockup_height / (activeStageObj.mockup_height || 1000)) * 100}%`,
         }
       : { left: "8%", top: "8%", width: "84%", height: "84%" };
 
-  const mockupRatio = activeStage
-    ? `${activeStage.mockup_width || 1000}/${activeStage.mockup_height || 1000}`
-    : activeArea
-    ? `${activeArea.width_px}/${activeArea.height_px}`
+  const mockupRatio = activeStageObj
+    ? `${activeStageObj.mockup_width || 1000}/${activeStageObj.mockup_height || 1000}`
+    : activePrintArea
+    ? `${activePrintArea.width_px}/${activePrintArea.height_px}`
     : "1/1";
 
   const clipartCategories = useMemo(
@@ -760,77 +795,138 @@ export function DesignEditor({ product, initialDesign, initialTemplate, initialV
   const methods = product.printing_methods;
   const displayTotal = quote?.total || (Number(product.base_price) + Number(selectedVariant?.price_delta || 0)) * quantity;
 
+  // Canvas container sizing - fit within available viewport
+  const canvasContainerStyle = {
+    position: "relative" as const,
+    width: "100%",
+    height: "100%",
+    maxWidth: "100vw",
+    maxHeight: "100vh",
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "center",
+    overflow: "hidden" as const,
+  };
+
   return (
-    <div className="container-x py-6 lg:py-8">
-      <div className="flex flex-wrap items-center justify-between gap-3">
+    <div className="fixed inset-0 z-0 bg-cream text-ink selection:bg-d95d39 selection:text-fbf7ef">
+      {/* Top Toolbar */}
+      <div className="fixed top-0 left-0 right-0 h-14 z-50 bg-cream/95 backdrop-blur-sm border-b border-ink/10 flex items-center justify-between px-6">
         <div className="flex items-center gap-3">
-          <Link href={`/products/${product.slug}`} className="flex h-9 w-9 items-center justify-center rounded-full border border-ink/15 hover:bg-ink/5" aria-label="Back to product">
+          <Link href={`/products/${product.slug}`} className="flex h-10 w-10 items-center justify-center rounded-lg border border-ink/15 hover:bg-ink/5" aria-label="Back to product">
             <ArrowLeft size={16} />
           </Link>
-          <div>
-            <p className="font-mono text-[10px] uppercase tracking-[0.2em] text-muted">Studio · {product.name}</p>
+          <div className="flex flex-col items-start gap-0.5">
+            <p className="font-mono text-[10px] uppercase tracking-[0.2em] text-clay">Studio · {product.name}</p>
             <input
               value={name}
               onChange={(event) => {
                 setName(event.target.value);
                 setDirty(true);
               }}
-              className="w-full max-w-xs border-none bg-transparent font-display text-xl outline-none focus:ring-0"
+              className="w-full max-w-xs border-none bg-transparent font-display text-xl font-bold outline-none focus:ring-0"
               aria-label="Design name"
             />
           </div>
         </div>
-        <div className="flex flex-wrap items-center gap-2">
-          <span className="hidden items-center gap-1.5 text-xs text-muted sm:flex">
-            {saving ? (
-              <><Loader2 size={13} className="animate-spin" /> Saving</>
-            ) : dirty ? (
-              <><span className="h-1.5 w-1.5 rounded-full bg-amber-500" /> Unsaved changes</>
-            ) : (
-              <><span className="h-1.5 w-1.5 rounded-full bg-emerald-500" /> {savedAt ? "Saved" : "Ready"}</>
-            )}
-          </span>
-          <Button variant="outline" size="sm" onClick={undo} disabled={!canUndo} title="Undo">
-            <Undo2 size={15} />
+
+        <div className="flex items-center gap-2">
+          <Button variant="outline" size="sm" onClick={() => setTool("products")} title="Product">
+            <Layout size={16} />
           </Button>
-          <Button variant="outline" size="sm" onClick={redo} disabled={!canRedo} title="Redo">
-            <Redo2 size={15} />
+          <Button variant="outline" size="sm" onClick={() => setTool("templates")} title="Templates">
+            <Shapes size={16} />
           </Button>
-          <Button variant="secondary" size="sm" onClick={handleDownload} loading={downloading}>
-            <Download size={15} /> PNG
+          <Button
+            variant={showMockupPreview ? "clay" : "outline"}
+            size="sm"
+            onClick={() => setShowMockupPreview((prev) => !prev)}
+            title="Mockup Preview"
+          >
+            <Maximize size={16} />
           </Button>
-          <Button size="sm" onClick={() => save(false)} loading={saving}>
-            <Save size={15} /> Save design
+        </div>
+
+        <div className="flex items-center gap-3">
+          <div className="flex items-center gap-2">
+            <span className="text-[10px] font-mono uppercase tracking-wider text-clay">{activeStageObj?.name || "Front"}</span>
+            <button
+              onClick={() => {
+                const stages = product.stages;
+                const currentIndex = stages.findIndex((s) => s.id === activeStageId);
+                const nextIndex = (currentIndex + 1) % stages.length;
+                loadStage(stages[nextIndex].id);
+              }}
+              className="flex h-8 w-8 items-center justify-center rounded-full border border-ink/15 hover:bg-ink/5"
+              title="Next view"
+            >
+              <ChevronRight size={14} />
+            </button>
+          </div>
+
+          <div className="h-6 w-px border-ink/20" />
+
+          <div className="flex items-center gap-1">
+            <span className="text-[10px] font-mono uppercase tracking-wider text-clay">Ready to print</span>
+            <span className="flex h-2 w-2 rounded-full bg-emerald-500" />
+          </div>
+
+          <div className="h-6 w-px border-ink/20" />
+
+          <button
+            onClick={() => router.push("/cart")}
+            className="flex h-10 w-10 items-center justify-center rounded-lg border border-ink/15 bg-white hover:bg-ink/10"
+            aria-label="View cart"
+          >
+            <ShoppingBag size={16} />
+            <span className="absolute -top-1 -right-1 flex h-4 w-4 items-center justify-center rounded-full bg-clay text-cream text-[10px] font-bold">
+              {cartCount > 0 ? cartCount : ""}
+            </span>
+          </button>
+
+          <span className="text-sm font-mono font-bold text-clay">${money(displayTotal)}</span>
+
+          <div className="flex items-center gap-1">
+            <button
+              onClick={() => setQuantity((v) => Math.max(1, v - 1))}
+              className="flex h-8 w-8 items-center justify-center rounded-full border border-ink/15 hover:bg-ink/5"
+            >
+              <Minus size={13} />
+            </button>
+            <input
+              type="number"
+              min={1}
+              max={1000}
+              value={quantity}
+              onChange={(event) => setQuantity(Math.max(1, Math.min(1000, Number(event.target.value) || 1)))}
+              className="w-10 h-8 border border-ink/15 rounded-lg text-center text-xs outline-none focus:ring-2 focus:ring-clay/20"
+            />
+            <button
+              onClick={() => setQuantity((v) => Math.min(1000, v + 1))}
+              className="flex h-8 w-8 items-center justify-center rounded-full border border-ink/15 hover:bg-ink/5"
+            >
+              <Plus size={13} />
+            </button>
+          </div>
+
+          <Button size="sm" onClick={handleAddToCart} loading={adding}>
+            <ShoppingBag size={16} /> Add to cart
           </Button>
         </div>
       </div>
 
-      {error && <div className="mt-4"><Alert>{error}</Alert></div>}
-      {notice && (
-        <div className="mt-4">
-          <Alert tone="success">
-            <span className="flex items-center justify-between gap-3">
-              {notice}
-              <button onClick={() => setNotice("")} className="text-xs underline">Dismiss</button>
-            </span>
-          </Alert>
-        </div>
-      )}
-      {!user && (
-        <div className="mt-4 rounded-xl border border-clay/20 bg-clay/5 px-4 py-3 text-sm text-ink">
-          You can explore the studio now.{" "}
-          <Link href={`/login?next=${encodeURIComponent(`/editor/${product.slug}`)}`} className="font-semibold text-clay underline">Sign in</Link>{" "}
-          to save designs, see exact pricing and add to cart.
-        </div>
-      )}
-
-      <div className="mt-5 grid items-start gap-4 lg:grid-cols-[290px_minmax(0,1fr)_340px]">
-        <aside className="order-2 card overflow-hidden lg:order-1">
+      {/* Main Workspace */}
+      <div className="flex h-[calc(100dvh-3.5rem)]">
+        {/* Left Tool Panel */}
+        <aside className="hidden lg:flex h-full w-64 border-r border-ink/10 bg-white flex flex-col z-40">
           <div className="grid grid-cols-5 border-b border-ink/10">
             {TOOL_ITEMS.map((item) => (
               <button
                 key={item.id}
-                onClick={() => setTool(item.id)}
+                onClick={() => {
+                  setTool(item.id);
+                  setPanelOpen(true);
+                }}
                 className={cn(
                   "flex flex-col items-center gap-1 py-3 text-[10px] font-semibold transition",
                   tool === item.id ? "bg-ink text-cream" : "text-muted hover:bg-ink/5 hover:text-ink"
@@ -842,7 +938,92 @@ export function DesignEditor({ product, initialDesign, initialTemplate, initialV
             ))}
           </div>
 
-          <div className="max-h-[620px] overflow-y-auto p-4">
+          <div className="flex-1 overflow-y-auto p-4">
+            {/* Tool panels */}
+            {tool === "products" && (
+              <div className="space-y-4">
+                <div>
+                  <label className="label">Product</label>
+                  <p className="text-[11px] text-muted">{product.name}</p>
+                  <p className="text-[10px] text-muted">{product.short_description}</p>
+                </div>
+                <div className="mt-4">
+                  <label className="label">Colour / Size</label>
+                  <div className="grid grid-cols-2 gap-3">
+                    <select value={variantId} onChange={(event) => setVariantId(event.target.value)} className="field">
+                      {product.variants.filter((variant) => variant.is_active).map((variant) => (
+                        <option key={variant.id} value={variant.id}>
+                          {[variant.color_name, variant.size].filter(Boolean).join(" / ") || variant.name}
+                          {Number(variant.price_delta) > 0 ? ` (+${money(variant.price_delta)})` : ""}
+                        </option>
+                      ))}
+                    </select>
+                    <select value={methodId} onChange={(event) => setMethodId(event.target.value)} className="field">
+                      {methods.map((link) => (
+                        <option key={link.id} value={link.printing_method.id}>
+                          {link.printing_method.name}
+                          {Number(link.printing_method.base_fee) > 0 ? ` (+${money(link.printing_method.base_fee)})` : ""}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                </div>
+                <div className="mt-4">
+                  <label className="label">Quantity</label>
+                  <div className="flex items-center gap-1">
+                    <button
+                      onClick={() => setQuantity((v) => Math.max(1, v - 1))}
+                      className="flex h-8 w-8 items-center justify-center rounded-full border border-ink/15 hover:border-ink"
+                    >
+                      <Minus size={13} />
+                    </button>
+                    <input
+                      type="number"
+                      min={1}
+                      max={1000}
+                      value={quantity}
+                      onChange={(event) => setQuantity(Math.max(1, Math.min(1000, Number(event.target.value) || 1)))}
+                      className="w-10 h-8 border border-ink/15 text-center text-xs outline-none focus:ring-2 focus:ring-clay/20"
+                    />
+                    <button
+                      onClick={() => setQuantity((v) => Math.min(1000, v + 1))}
+                      className="flex h-8 w-8 items-center justify-center rounded-full border border-ink/15 hover:bg-ink/5"
+                    >
+                      <Plus size={13} />
+                    </button>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {tool === "templates" && (
+              <div className="space-y-3">
+                <p className="text-[11px] text-muted">Applying a template replaces the current stage canvas. You can undo it.</p>
+                <div className="grid grid-cols-2 gap-2">
+                  {templateList.map((template) => (
+                    <button
+                      key={template.id}
+                      onClick={() => applyTemplate(template)}
+                      className="group overflow-hidden rounded-xl border border-ink/10 bg-white text-left hover:border-clay"
+                    >
+                      <div className="aspect-[4/5] bg-sand">
+                        {template.preview_url ? (
+                          <img src={mediaUrl(template.preview_url)} alt={template.name} className="h-full w-full object-cover" />
+                        ) : (
+                          <div className="flex h-full items-center justify-center text-ink/20"><Shapes /></div>
+                        )}
+                      </div>
+                      <div className="p-2">
+                        <p className="truncate text-[11px] font-semibold">{template.name}</p>
+                        <p className="text-[10px] text-muted">{template.category}</p>
+                      </div>
+                    </button>
+                  ))}
+                </div>
+                {templateList.length === 0 && <p className="text-[11px] text-muted">No templates available.</p>}
+              </div>
+            )}
+
             {tool === "text" && (
               <div className="space-y-5">
                 <div>
@@ -910,6 +1091,63 @@ export function DesignEditor({ product, initialDesign, initialTemplate, initialV
               </div>
             )}
 
+            {tool === "elements" && (
+              <div className="space-y-3">
+                <div className="grid grid-cols-3 gap-1">
+                  <button
+                    onClick={() => addShape("rect")}
+                    className="aspect-square overflow-hidden rounded-lg border border-ink/10 bg-white p-1.5 hover:border-clay"
+                    title="Rectangle"
+                  >
+                    <Square size={14} />
+                  </button>
+                  <button
+                    onClick={() => addShape("circle")}
+                    className="aspect-square overflow-hidden rounded-lg border border-ink/10 bg-white p-1.5 hover:border-clay"
+                    title="Circle"
+                  >
+                    <Circle size={14} />
+                  </button>
+                  <button
+                    onClick={() => addShape("triangle")}
+                    className="aspect-square overflow-hidden rounded-lg border border-ink/10 bg-white p-1.5 hover:border-clay"
+                    title="Triangle"
+                  >
+                    <Triangle size={14} />
+                  </button>
+                </div>
+              </div>
+            )}
+
+            {tool === "clipart" && (
+              <div className="space-y-3">
+                <div className="flex flex-wrap gap-1.5">
+                  {clipartCategories.map((category) => (
+                    <button
+                      key={category}
+                      onClick={() => setClipartFilter(category)}
+                      className={cn("rounded-full px-2.5 py-1 text-[10px] font-semibold", clipartFilter === category ? "bg-ink text-cream" : "bg-sand")}
+                    >
+                      {category}
+                    </button>
+                  ))}
+                </div>
+                <div className="grid grid-cols-3 gap-2">
+                  {visibleCliparts.map((item) => (
+                    <button
+                      key={item.id}
+                      onClick={() => addImage(item.image_url, 600, 600, item.name)}
+                      className="group aspect-square overflow-hidden rounded-lg border border-ink/10 bg-white p-1.5 hover:border-clay"
+                      title={item.name}
+                    >
+                      <img src={mediaUrl(item.thumbnail_url || item.image_url)} alt={item.name} className="h-full w-full object-contain transition group-hover:scale-105" />
+                    </button>
+                  ))}
+                  {visibleCliparts.length === 0 && <p className="text-[11px] text-muted">No clipart in this category yet.</p>}
+                </div>
+              </div>
+            )}
+
             {tool === "upload" && (
               <div className="space-y-4">
                 <div
@@ -944,63 +1182,6 @@ export function DesignEditor({ product, initialDesign, initialTemplate, initialV
               </div>
             )}
 
-            {tool === "clipart" && (
-              <div className="space-y-3">
-                <div className="flex flex-wrap gap-1.5">
-                  {clipartCategories.map((category) => (
-                    <button
-                      key={category}
-                      onClick={() => setClipartFilter(category)}
-                      className={cn("rounded-full px-2.5 py-1 text-[10px] font-semibold", clipartFilter === category ? "bg-ink text-cream" : "bg-sand")}
-                    >
-                      {category}
-                    </button>
-                  ))}
-                </div>
-                <div className="grid grid-cols-3 gap-2">
-                  {visibleCliparts.map((item) => (
-                    <button
-                      key={item.id}
-                      onClick={() => addImage(item.image_url, 600, 600, item.name)}
-                      className="group aspect-square overflow-hidden rounded-lg border border-ink/10 bg-white p-1.5 hover:border-clay"
-                      title={item.name}
-                    >
-                      <img src={mediaUrl(item.thumbnail_url || item.image_url)} alt={item.name} className="h-full w-full object-contain transition group-hover:scale-105" />
-                    </button>
-                  ))}
-                </div>
-                {visibleCliparts.length === 0 && <p className="text-xs text-muted">No clipart in this category yet.</p>}
-              </div>
-            )}
-
-            {tool === "templates" && (
-              <div className="space-y-3">
-                <p className="text-xs text-muted">Applying a template replaces the current stage canvas. You can undo it.</p>
-                <div className="grid grid-cols-2 gap-2">
-                  {templateList.map((template) => (
-                    <button
-                      key={template.id}
-                      onClick={() => applyTemplate(template)}
-                      className="group overflow-hidden rounded-xl border border-ink/10 bg-white text-left hover:border-clay"
-                    >
-                      <div className="aspect-[4/5] bg-sand">
-                        {template.preview_url ? (
-                          <img src={mediaUrl(template.preview_url)} alt={template.name} className="h-full w-full object-cover" />
-                        ) : (
-                          <div className="flex h-full items-center justify-center text-ink/20"><Shapes /></div>
-                        )}
-                      </div>
-                      <div className="p-2">
-                        <p className="truncate text-[11px] font-semibold">{template.name}</p>
-                        <p className="text-[10px] text-muted">{template.category}</p>
-                      </div>
-                    </button>
-                  ))}
-                </div>
-                {templateList.length === 0 && <p className="text-xs text-muted">No templates available.</p>}
-              </div>
-            )}
-
             {tool === "layers" && (
               <div className="space-y-3">
                 <div className="flex items-center justify-between">
@@ -1029,7 +1210,7 @@ export function DesignEditor({ product, initialDesign, initialTemplate, initialV
                       <span className="text-[9px] uppercase text-muted">{index === 0 ? "top" : ""}</span>
                     </button>
                   ))}
-                  {layers.length === 0 && <p className="text-xs text-muted">Your canvas is empty. Add text or art to begin.</p>}
+                  {layers.length === 0 && <p className="text-[11px] text-muted">Your canvas is empty. Add text or art to begin.</p>}
                 </div>
                 {selected && (
                   <div className="grid grid-cols-3 gap-1.5 border-t border-ink/10 pt-3">
@@ -1072,56 +1253,53 @@ export function DesignEditor({ product, initialDesign, initialTemplate, initialV
           </div>
         </aside>
 
-        <section className="order-1 lg:order-2">
-          <div className="card p-3 sm:p-4">
-            <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
-              <div className="flex flex-wrap gap-1.5">
-                {product.stages.map((stage) => (
-                  <button
-                    key={stage.id}
-                    onClick={() => loadStage(stage.id)}
-                    className={cn(
-                      "rounded-full px-3 py-1.5 text-[11px] font-semibold capitalize",
-                      activeStageId === stage.id ? "bg-ink text-cream" : "bg-sand text-ink hover:bg-sand/70"
-                    )}
-                  >
-                    {stage.name}
-                  </button>
-                ))}
-              </div>
-              <span className="flex items-center gap-1.5 font-mono text-[10px] uppercase tracking-wide text-muted">
-                <RotateCcw size={11} /> {activeArea ? `${Number(activeArea.width_mm)} × ${Number(activeArea.height_mm)} mm` : "print area"}
-              </span>
+        {/* Main Canvas Workspace */}
+        <section className="absolute top-[56px] left-0 right-0 bottom-0 bg-sand flex flex-col pb-0">
+          <div className="flex items-center justify-between gap-2 px-4 py-2 bg-sand border-b border-ink/10">
+            <div className="flex flex-wrap gap-1.5">
+              {product.stages.map((stage) => (
+                <button
+                  key={stage.id}
+                  onClick={() => loadStage(stage.id)}
+                  className={cn(
+                    "rounded-full px-3 py-1.5 text-[11px] font-semibold capitalize",
+                    activeStageId === stage.id ? "bg-ink text-cream" : "bg-sand text-ink hover:bg-sand/70"
+                  )}
+                >
+                  {stage.name}
+                </button>
+              ))}
             </div>
+            <span className="flex items-center gap-1.5 font-mono text-[10px] uppercase tracking-wide text-muted">
+              <RotateCcw size={11} /> {activePrintArea ? `${Number(activePrintArea.width_mm)} × ${Number(activePrintArea.height_mm)} mm` : "print area"}
+            </span>
+          </div>
 
+          <div className="flex-1 relative bg-sand flex items-center justify-center overflow-hidden">
             <div
-              className="relative mx-auto w-full max-w-[560px] overflow-hidden rounded-2xl bg-sand"
-              style={{ aspectRatio: mockupRatio }}
+              className="absolute inset-0 h-full w-full bg-[repeating-conic-gradient(#efe7d9_0_25%,#f7f1e7_0_50%)] bg-[length:24px_24px]"
+            />
+            <div
+              className="absolute z-10"
+              style={stageBox}
             >
-              {mockupUrl ? (
-                <img src={mediaUrl(mockupUrl)} alt={activeStage?.name || "Product mockup"} className="pointer-events-none absolute inset-0 h-full w-full select-none object-contain" draggable={false} />
-              ) : (
-                <div className="absolute inset-0 bg-[repeating-conic-gradient(#efe7d9_0_25%,#f7f1e7_0_50%)] bg-[length:24px_24px]" />
-              )}
-              <div className="absolute z-10" style={stageBox}>
-                <div className="editor-canvas h-full w-full">
-                  <canvas ref={canvasElRef} />
+              <div className="editor-canvas h-full w-full">
+                <canvas ref={canvasElRef} />
+              </div>
+              <div className="absolute inset-0 z-20 border border-dashed border-clay/50 pointer-events-none" style={stageBox} />
+            </div>
+            {!ready && (
+              <div className="absolute inset-0 z-30 flex items-center justify-center bg-cream/70 backdrop-blur-sm">
+                <div className="flex flex-col items-center gap-2 text-xs text-muted">
+                  <Loader2 className="animate-spin text-clay" /> Warming up the studio…
                 </div>
               </div>
-              <div className="pointer-events-none absolute z-20 border border-dashed border-clay/50" style={stageBox} />
-              {!ready && (
-                <div className="absolute inset-0 z-30 flex items-center justify-center bg-cream/70 backdrop-blur-sm">
-                  <div className="flex flex-col items-center gap-2 text-xs text-muted">
-                    <Loader2 className="animate-spin text-clay" /> Warming up the studio…
-                  </div>
-                </div>
-              )}
-            </div>
+            )}
+          </div>
 
-            <div className="mt-3 flex flex-wrap items-center justify-between gap-2 text-[11px] text-muted">
-              <span>Drag to move · corners to scale · double-click text to edit</span>
-              <span>{activeArea ? `${activeArea.export_width_px} × ${activeArea.export_height_px}px @ ${activeArea.export_dpi} DPI` : ""}</span>
-            </div>
+          <div className="mt-3 flex flex-wrap items-center justify-between gap-2 text-[11px] text-muted px-4">
+            <span>Drag to move · corners to scale · double-click text to edit</span>
+            <span>{activePrintArea ? `${activePrintArea.export_width_px} × ${activePrintArea.export_height_px}px @ ${activePrintArea.export_dpi} DPI` : ""}</span>
           </div>
 
           <div className="mt-3 flex flex-wrap items-center justify-between gap-2 rounded-2xl bg-olive-soft px-4 py-3 text-xs text-olive">
@@ -1130,8 +1308,9 @@ export function DesignEditor({ product, initialDesign, initialTemplate, initialV
           </div>
         </section>
 
-        <aside className="order-3 space-y-3">
-          <div className="card p-5">
+        {/* Right Configuration Panel (Desktop) */}
+        <aside className="hidden lg:flex h-full w-80 border-l border-ink/10 bg-white flex flex-col z-40">
+          <div className="p-5 flex-1 overflow-y-auto">
             <p className="eyebrow">Your configuration</p>
             <h2 className="mt-1 font-display text-2xl">{product.name}</h2>
 
@@ -1169,7 +1348,12 @@ export function DesignEditor({ product, initialDesign, initialTemplate, initialV
               <div>
                 <span className="label">Quantity</span>
                 <div className="flex items-center gap-2">
-                  <button onClick={() => setQuantity((value) => Math.max(1, value - 1))} className="flex h-10 w-10 items-center justify-center rounded-full border border-ink/15 hover:border-ink"><Minus size={14} /></button>
+                  <button
+                    onClick={() => setQuantity((value) => Math.max(1, value - 1))}
+                    className="flex h-10 w-10 items-center justify-center rounded-full border border-ink/15 hover:border-ink"
+                  >
+                    <Minus size={14} />
+                  </button>
                   <input
                     type="number"
                     min={1}
@@ -1178,7 +1362,12 @@ export function DesignEditor({ product, initialDesign, initialTemplate, initialV
                     onChange={(event) => setQuantity(Math.max(1, Math.min(1000, Number(event.target.value) || 1)))}
                     className="field text-center"
                   />
-                  <button onClick={() => setQuantity((value) => Math.min(1000, value + 1))} className="flex h-10 w-10 items-center justify-center rounded-full border border-ink/15 hover:border-ink"><Plus size={14} /></button>
+                  <button
+                    onClick={() => setQuantity((value) => Math.min(1000, value + 1))}
+                    className="flex h-10 w-10 items-center justify-center rounded-full border border-ink/15 hover:border-ink"
+                  >
+                    <Plus size={14} />
+                  </button>
                 </div>
               </div>
             </div>
@@ -1188,7 +1377,9 @@ export function DesignEditor({ product, initialDesign, initialTemplate, initialV
                 <div className="space-y-1.5 text-sm">
                   <div className="flex justify-between text-muted"><span>Unit price</span><span>{money(quote.unit_price)}</span></div>
                   <div className="flex justify-between text-muted"><span>Subtotal</span><span>{money(quote.subtotal)}</span></div>
-                  {Number(quote.discount) > 0 && <div className="flex justify-between text-olive"><span>Quantity discount</span><span>−{money(quote.discount)}</span></div>}
+                  {Number(quote.discount) > 0 && (
+                    <div className="flex justify-between text-olive"><span>Quantity discount</span><span>−{money(quote.discount)}</span></div>
+                  )}
                   <div className="mt-2 flex items-baseline justify-between border-t border-ink/10 pt-2">
                     <span className="font-semibold">Design total</span>
                     <span className="font-display text-2xl">{money(quote.total)}</span>
@@ -1209,18 +1400,59 @@ export function DesignEditor({ product, initialDesign, initialTemplate, initialV
             <p className="mt-2 text-center text-[10px] text-muted">
               {user ? "Your design is saved with this order." : "Sign in to save and order your design."}
             </p>
-          </div>
 
-          <div className="rounded-2xl bg-sand/70 p-4 text-xs leading-relaxed text-muted">
-            <p className="font-semibold text-ink">Designer tips</p>
-            <ul className="mt-2 space-y-1">
-              <li>• Keep text inside the dashed print boundary.</li>
-              <li>• Use high-contrast colours on dark garments.</li>
-              <li>• Upload transparent PNGs for the cleanest prints.</li>
-              <li>• Each stage keeps its own artwork.</li>
-            </ul>
+            <div className="rounded-2xl bg-sand/70 p-4 text-xs leading-relaxed text-muted">
+              <p className="font-semibold text-ink">Designer tips</p>
+              <ul className="mt-2 space-y-1">
+                <li>• Keep text inside the dashed print boundary.</li>
+                <li>• Use high-contrast colours on dark garments.</li>
+                <li>• Upload transparent PNGs for the cleanest prints.</li>
+                <li>• Each stage keeps its own artwork.</li>
+              </ul>
+            </div>
           </div>
         </aside>
+      </div>
+
+      {/* Bottom Toolbar (Mobile) */}
+      <div className="lg:hidden fixed bottom-0 left-0 right-0 h-14 z-50 bg-cream border-t border-ink/10 flex items-center justify-between px-4">
+        <div className="flex items-center gap-2">
+          <button onClick={() => setTool("products")} className={cn("flex h-10 w-10 items-center justify-center rounded-full", tool === "products" ? "bg-ink text-cream" : "bg-white text-muted hover:bg-ink/5")}>
+            <Layout size={16} />
+          </button>
+          <button onClick={() => setTool("templates")} className={cn("flex h-10 w-10 items-center justify-center rounded-full", tool === "templates" ? "bg-ink text-cream" : "bg-white text-muted hover:bg-ink/5")}>
+            <Shapes size={16} />
+          </button>
+          <button onClick={() => setTool("text")} className={cn("flex h-10 w-10 items-center justify-center rounded-full", tool === "text" ? "bg-ink text-cream" : "bg-white text-muted hover:bg-ink/5")}>
+            <Type size={16} />
+          </button>
+          <button onClick={() => setTool("elements")} className={cn("flex h-10 w-10 items-center justify-center rounded-full", tool === "elements" ? "bg-ink text-cream" : "bg-white text-muted hover:bg-ink/5")}>
+            <Grid size={16} />
+          </button>
+          <button onClick={() => setTool("images")} className={cn("flex h-10 w-10 items-center justify-center rounded-full", tool === "images" ? "bg-ink text-cream" : "bg-white text-muted hover:bg-ink/5")}>
+            <ImageIcon size={16} />
+          </button>
+          <button onClick={() => setTool("upload")} className={cn("flex h-10 w-10 items-center justify-center rounded-full", tool === "upload" ? "bg-ink text-cream" : "bg-white text-muted hover:bg-ink/5")}>
+            <UploadCloud size={16} />
+          </button>
+          <button onClick={() => setTool("layers")} className={cn("flex h-10 w-10 items-center justify-center rounded-full", tool === "layers" ? "bg-ink text-cream" : "bg-white text-muted hover:bg-ink/5")}>
+            <Layers size={16} />
+          </button>
+        </div>
+        <div className="flex items-center gap-2">
+          <button onClick={undo} className={cn("flex h-10 w-10 items-center justify-center rounded-full", !canUndo ? "bg-white text-muted" : "bg-ink text-cream")} disabled={!canUndo}>
+            <Undo2 size={16} />
+          </button>
+          <button onClick={redo} className={cn("flex h-10 w-10 items-center justify-center rounded-full", !canRedo ? "bg-white text-muted" : "bg-ink text-cream")} disabled={!canRedo}>
+            <Redo2 size={16} />
+          </button>
+          <button onClick={() => setShowMockupPreview((prev) => !prev)} className={cn("flex h-10 w-10 items-center justify-center rounded-full", showMockupPreview ? "bg-ink text-cream" : "bg-white text-muted hover:bg-ink/5")}>
+            <Maximize size={16} />
+          </button>
+          <button onClick={handleAddToCart} className="flex h-10 w-10 items-center justify-center rounded-full bg-ink text-cream" disabled={adding}>
+            <ShoppingBag size={16} />
+          </button>
+        </div>
       </div>
     </div>
   );

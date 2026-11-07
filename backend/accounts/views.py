@@ -1,8 +1,11 @@
+from django.conf import settings
 from django.db.models import Count
+from django.middleware.csrf import get_token
 from rest_framework import generics, status
 from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
+from rest_framework_simplejwt.views import TokenRefreshView
 
 from core.permissions import IsAdminRole
 
@@ -14,6 +17,32 @@ from .serializers import (
     RegisterSerializer,
     UserSerializer,
 )
+
+
+def _set_auth_cookies(response, access, refresh):
+    response.set_cookie(
+        settings.AUTH_ACCESS_COOKIE,
+        access,
+        httponly=True,
+        secure=settings.AUTH_COOKIE_SECURE,
+        samesite=settings.AUTH_COOKIE_SAMESITE,
+        path="/",
+    )
+    response.set_cookie(
+        settings.AUTH_REFRESH_COOKIE,
+        refresh,
+        httponly=True,
+        secure=settings.AUTH_COOKIE_SECURE,
+        samesite=settings.AUTH_COOKIE_SAMESITE,
+        path="/",
+    )
+    return response
+
+
+def _clear_auth_cookies(response):
+    response.delete_cookie(settings.AUTH_ACCESS_COOKIE, path="/")
+    response.delete_cookie(settings.AUTH_REFRESH_COOKIE, path="/")
+    return response
 
 
 class RegisterView(APIView):
@@ -28,14 +57,10 @@ class RegisterView(APIView):
         from rest_framework_simplejwt.tokens import RefreshToken
 
         refresh = RefreshToken.for_user(user)
-        return Response(
-            {
-                "access": str(refresh.access_token),
-                "refresh": str(refresh),
-                "user": UserSerializer(user).data,
-            },
-            status=status.HTTP_201_CREATED,
+        response = Response(
+            {"user": UserSerializer(user).data}, status=status.HTTP_201_CREATED
         )
+        return _set_auth_cookies(response, str(refresh.access_token), str(refresh))
 
 
 class LoginView(APIView):
@@ -44,7 +69,38 @@ class LoginView(APIView):
     def post(self, request):
         serializer = EmailTokenObtainPairSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
-        return Response(serializer.validated_data)
+        user = serializer.user
+        response = Response({"user": UserSerializer(user).data})
+        return _set_auth_cookies(response, serializer.validated_data["access"], serializer.validated_data["refresh"])
+
+
+class CookieTokenRefreshView(TokenRefreshView):
+    permission_classes = [AllowAny]
+
+    def post(self, request, *args, **kwargs):
+        if "refresh" not in request.data:
+            request.data["refresh"] = request.COOKIES.get(settings.AUTH_REFRESH_COOKIE, "")
+        response = super().post(request, *args, **kwargs)
+        if response.status_code == 200 and "access" in response.data:
+            response = _set_auth_cookies(
+                response, response.data["access"], request.COOKIES.get(settings.AUTH_REFRESH_COOKIE, "")
+            )
+        return response
+
+
+class LogoutView(APIView):
+    permission_classes = [AllowAny]
+
+    def post(self, request):
+        response = Response({"detail": "Logged out."})
+        return _clear_auth_cookies(response)
+
+
+class CsrfTokenView(APIView):
+    permission_classes = [AllowAny]
+
+    def get(self, request):
+        return Response({"csrfToken": get_token(request)})
 
 
 class MeView(generics.RetrieveUpdateAPIView):

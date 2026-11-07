@@ -1,7 +1,9 @@
 import json
 import logging
 
+from django.conf import settings
 from django.db.models import Count, Q, Sum
+from django.utils import timezone
 from django.utils.decorators import method_decorator
 from django.views.decorators.csrf import csrf_exempt
 from rest_framework import generics, status, viewsets
@@ -22,13 +24,21 @@ from .serializers import (
     CartItemSerializer,
     CartSerializer,
     CheckoutSerializer,
+    CheckoutSessionSerializer,
     OrderListSerializer,
     OrderSerializer,
     StoreConfigSerializer,
     WebhookEventSerializer,
 )
-from .services import CartError, add_cart_item, checkout_cart, quote_item, update_cart_item
-from .shopify import ShopifyError, fetch_products, import_products, mark_order_from_webhook, verify_webhook_hmac
+from .services import CartError, add_cart_item, checkout_cart, create_stripe_checkout, quote_item, update_cart_item
+from .shopify import (
+    ShopifyError,
+    fetch_products,
+    import_products,
+    mark_order_from_webhook,
+    sync_inventory,
+    verify_webhook_hmac,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -115,7 +125,7 @@ class CartItemsView(APIView):
         if quantity < 1 or quantity > 1000:
             return Response({"detail": "Quantity must be between 1 and 1000."}, status=400)
         try:
-            item = add_cart_item(
+            item, created = add_cart_item(
                 request.user,
                 product_id=product_id,
                 variant_id=request.data.get("variant"),
@@ -126,7 +136,8 @@ class CartItemsView(APIView):
         except CartError as exc:
             return Response({"detail": str(exc)}, status=400)
         cart = item.cart
-        return Response(CartSerializer(cart, context={"request": request}).data, status=201)
+        status_code = 201 if created else 200
+        return Response(CartSerializer(cart, context={"request": request}).data, status=status_code)
 
 
 class CartItemView(APIView):
@@ -332,8 +343,13 @@ class ShopifyWebhookView(APIView):
         )
         try:
             result = "stored"
-            if topic in ("orders/create", "orders/paid", "orders/updated"):
-                result = mark_order_from_webhook(payload)
+            if topic in (
+                "orders/create",
+                "orders/paid",
+                "orders/updated",
+                "orders/cancelled",
+            ):
+                result = mark_order_from_webhook(payload, topic=topic)
             event.processed = True
             event.save(update_fields=["processed", "updated_at"])
             return Response({"status": result})
@@ -342,6 +358,118 @@ class ShopifyWebhookView(APIView):
             event.error = str(exc)[:2000]
             event.save(update_fields=["error", "updated_at"])
             return Response({"status": "accepted_with_errors", "detail": "Webhook stored; processing failed."})
+
+
+class StripeCheckoutSessionView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request):
+        if not (settings.STRIPE_SECRET_KEY and settings.STRIPE_ENABLED):
+            return Response(
+                {"detail": "Stripe is not configured for this storefront."}, status=400
+            )
+        serializer = CheckoutSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        try:
+            order, session = create_stripe_checkout(
+                request.user,
+                serializer.validated_data,
+                success_url=request.data.get("success_url", ""),
+                cancel_url=request.data.get("cancel_url", ""),
+            )
+        except CartError as exc:
+            return Response({"detail": str(exc)}, status=400)
+        return Response(
+            CheckoutSessionSerializer(
+                {
+                    "order": order.id,
+                    "order_number": order.number,
+                    "session_id": session.id,
+                    "url": session.url,
+                    "status": order.payment_status,
+                }
+            ).data,
+            status=status.HTTP_201_CREATED,
+        )
+
+
+@method_decorator(csrf_exempt, name="dispatch")
+class StripeWebhookView(APIView):
+    permission_classes = [AllowAny]
+    authentication_classes = []
+    parser_classes = []
+
+    def post(self, request):
+        if not settings.STRIPE_WEBHOOK_SECRET:
+            return Response({"detail": "Stripe webhook secret is not configured."}, status=400)
+        raw = request.body
+        sig_header = request.headers.get("Stripe-Signature", "")
+        external_id = request.headers.get("Stripe-Webhook-Id", "")
+        try:
+            import stripe
+
+            stripe.api_key = settings.STRIPE_SECRET_KEY
+            stripe_event = stripe.Webhook.construct_event(raw, sig_header, settings.STRIPE_WEBHOOK_SECRET)
+        except (ValueError, stripe.error.SignatureVerificationError):
+            return Response({"detail": "Invalid webhook signature."}, status=401)
+        except Exception as exc:  # stripe not installed or misconfigured
+            logger.exception("Stripe webhook setup failed")
+            return Response({"detail": "Webhook processing is unavailable."}, status=500)
+
+        if not external_id:
+            external_id = str(stripe_event.get("id", ""))[:120]
+
+        if external_id and WebhookEvent.objects.filter(topic=stripe_event["type"], external_id=external_id).exists():
+            return Response({"status": "duplicate_ignored"})
+
+        webhook_event = WebhookEvent.objects.create(
+            topic=stripe_event["type"],
+            external_id=external_id,
+            payload=stripe_event.data.object,
+            verified=True,
+        )
+        try:
+            result = "stored"
+            if stripe_event["type"] == "checkout.session.completed":
+                result = self._handle_stripe_checkout_completed(stripe_event.data.object)
+            webhook_event.processed = True
+            webhook_event.save(update_fields=["processed", "updated_at"])
+            return Response({"status": result})
+        except Exception as exc:
+            logger.exception("Stripe webhook processing failed")
+            webhook_event.error = str(exc)[:2000]
+            webhook_event.save(update_fields=["error", "updated_at"])
+            return Response({"status": "accepted_with_errors", "detail": "Webhook stored; processing failed."})
+
+    def _handle_stripe_checkout_completed(self, session):
+        from commerce.models import Order
+
+        order_id = (session.get("metadata") or {}).get("order_id")
+        stripe_session_id = session.get("id")
+        order = None
+        if order_id:
+            order = Order.objects.filter(pk=order_id).first()
+        if order is None and stripe_session_id:
+            order = Order.objects.filter(stripe_session_id=stripe_session_id).first()
+        if order is None:
+            return "no_matching_order"
+        if order.payment_status == Order.PaymentStatus.PAID:
+            return "already_paid"
+        order.payment_status = Order.PaymentStatus.PAID
+        if order.status in (Order.Status.PENDING, Order.Status.PAID):
+            order.status = Order.Status.PROCESSING
+        order.paid_at = timezone.now()
+        order.stripe_payment_intent_id = session.get("payment_intent") or order.stripe_payment_intent_id
+        order.save(
+            update_fields=[
+                "payment_status",
+                "status",
+                "paid_at",
+                "stripe_payment_intent_id",
+                "updated_at",
+            ]
+        )
+        return "order_updated"
 
 
 class AdminShopifyStatusView(APIView):
@@ -368,6 +496,7 @@ class AdminShopifySyncView(APIView):
     permission_classes = [IsAdminRole]
 
     def post(self, request):
+        action = request.data.get("action", "fetch")
         try:
             products = fetch_products(limit=int(request.data.get("limit", 50)))
         except ShopifyError as exc:
@@ -378,9 +507,12 @@ class AdminShopifySyncView(APIView):
                 },
                 status=400,
             )
-        if request.data.get("import"):
+        if action == "import":
             result = import_products(products, user=request.user)
             return Response({"imported": result, "products": products})
+        if action == "sync_inventory":
+            result = sync_inventory(products)
+            return Response({"inventory": result, "products": products})
         return Response({"products": products, "count": len(products)})
 
 

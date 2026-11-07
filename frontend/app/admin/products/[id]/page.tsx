@@ -349,7 +349,8 @@ export default function AdminProductDetailPage() {
       data.append("is_active", String(stageForm.is_active));
       data.append("print_area_data", JSON.stringify(area));
       if (stageFile) data.append("mockup_image", stageFile);
-      await request(editingStage ? `/admin/stages/${editingStage.id}/` : `/admin/products/${id}/stages/`, {
+      await request({
+        path: editingStage ? `/admin/stages/${editingStage.id}/` : `/admin/products/${id}/stages/`,
         method: editingStage ? "PATCH" : "POST",
         form: data,
       });

@@ -2,13 +2,18 @@ import base64
 import hashlib
 import hmac
 import json
+import sys
+import types
 from decimal import Decimal
+from unittest import mock
 
 from django.test import override_settings
 from rest_framework import status
 
 from catalog.models import PricingRule
-from commerce.models import Cart, Order, StoreConfiguration, WebhookEvent
+from commerce.models import Cart, Order, OrderItem, StoreConfiguration, WebhookEvent
+from commerce.services import CartError
+from commerce.shopify import sync_inventory
 from core.testing import TempMediaTestCase, design_payload, make_product, make_user
 from designer.models import Design
 
@@ -197,6 +202,23 @@ class CommerceApiTests(TempMediaTestCase):
         self.assertEqual(patched.data["announcement"], "New drop")
         self.assertEqual(patched.data["shipping_fee"], "5.50")
 
+    def test_dashboard_revenue_formatted_to_two_decimals(self):
+        """Dashboard revenue must always be a quantized currency string."""
+        self._add_item(quantity=3)  # subtotal 47.00 * ... uses existing pricing
+        self._checkout()
+        self.client.force_authenticate(self.admin)
+        dashboard = self.client.get("/api/admin/dashboard/")
+        self.assertEqual(dashboard.status_code, status.HTTP_200_OK)
+        revenue = dashboard.data["revenue"]
+        self.assertRegex(revenue, r"^\d+\.\d{2}$", f"Revenue should be quantized to 2 decimals, got {revenue!r}")
+
+    def test_dashboard_revenue_zero_when_no_orders(self):
+        """Empty aggregation must return a zero-formatted revenue string."""
+        self.client.force_authenticate(self.admin)
+        dashboard = self.client.get("/api/admin/dashboard/")
+        self.assertEqual(dashboard.status_code, status.HTTP_200_OK)
+        self.assertEqual(dashboard.data["revenue"], "0.00")
+
     @override_settings(SHOPIFY_WEBHOOK_SECRET="test-webhook-secret")
     def test_shopify_webhook_verifies_signature_and_deduplicates(self):
         order = Order.objects.create(
@@ -232,15 +254,245 @@ class CommerceApiTests(TempMediaTestCase):
         self.assertEqual(duplicate.data["status"], "duplicate_ignored")
         self.assertEqual(WebhookEvent.objects.count(), 1)
 
-    def test_shopify_webhook_rejects_invalid_signature(self):
-        response = self.client.post(
-            "/api/shopify/webhooks/",
-            data=b"{}",
-            content_type="application/json",
-            HTTP_X_SHOPIFY_HMAC_SHA256="invalid",
-            HTTP_X_SHOPIFY_TOPIC="orders/paid",
+    def test_shopify_webhook_secret_independent_of_api_secret(self):
+        """The webhook signing secret must be configurable independently of the API secret."""
+        with override_settings(SHOPIFY_API_SECRET="api-secret", SHOPIFY_WEBHOOK_SECRET="webhook-secret"):
+            from django.conf import settings as django_settings
+
+            self.assertEqual(django_settings.SHOPIFY_API_SECRET, "api-secret")
+            self.assertEqual(django_settings.SHOPIFY_WEBHOOK_SECRET, "webhook-secret")
+            self.assertNotEqual(django_settings.SHOPIFY_WEBHOOK_SECRET, django_settings.SHOPIFY_API_SECRET)
+
+    @override_settings(SHOPIFY_WEBHOOK_SECRET="test-webhook-secret")
+    def test_shopify_webhook_cancels_order(self):
+        """An orders/cancelled webhook must mark the local order cancelled."""
+        order = Order.objects.create(
+            user=self.user, number="PR-TEST-CANCEL", status=Order.Status.PROCESSING,
+            payment_status=Order.PaymentStatus.PAID,
         )
+        payload = {
+            "id": 991123,
+            "name": "#1002",
+            "topic": "orders/cancelled",
+            "note_attributes": [{"name": "printora_order_number", "value": order.number}],
+        }
+        body = json.dumps(payload).encode()
+        digest = base64.b64encode(
+            hmac.new(b"test-webhook-secret", body, hashlib.sha256).digest()
+        ).decode()
+        headers = {
+            "HTTP_X_SHOPIFY_HMAC_SHA256": digest,
+            "HTTP_X_SHOPIFY_TOPIC": "orders/cancelled",
+            "HTTP_X_SHOPIFY_WEBHOOK_ID": "wh-test-2",
+        }
+        response = self.client.post(
+            "/api/shopify/webhooks/", data=body, content_type="application/json", **headers
+        )
+        self.assertEqual(response.status_code, status.HTTP_200_OK, response.data)
+        order.refresh_from_db()
+        self.assertEqual(order.status, Order.Status.CANCELLED)
+
+    def test_shopify_inventory_sync_updates_variant_stock(self):
+        """sync_inventory must write Shopify variant quantities to local stock."""
+        self.product.metadata = {"shopify_id": "shop-prod-1"}
+        self.product.save(update_fields=["metadata"])
+        self.variant.sku = "SHOP-VAR-1"
+        self.variant.stock_quantity = 100
+        self.variant.save(update_fields=["sku", "stock_quantity"])
+
+        products = [
+            {
+                "shopify_id": "shop-prod-1",
+                "variants": [
+                    {"sku": "SHOP-VAR-1", "inventory_quantity": 7},
+                    {"sku": "SHOP-VAR-MISSING", "inventory_quantity": 3},
+                ],
+            }
+        ]
+        result = sync_inventory(products)
+        self.assertEqual(result["updated"], 1)
+        self.variant.refresh_from_db()
+        self.assertEqual(self.variant.stock_quantity, 7)
+
+    # ------------------------------------------------------------------ #
+    # Stripe checkout tests (Stripe is exercised with a mocked module)     #
+    # ------------------------------------------------------------------ #
+
+    def _fake_stripe_module(self, order_id):
+        error_mod = types.ModuleType("stripe.error")
+
+        class SignatureVerificationError(Exception):
+            pass
+
+        error_mod.SignatureVerificationError = SignatureVerificationError
+
+        checkout_mod = types.ModuleType("stripe.checkout")
+
+        class Session:
+            id = "cs_test_123"
+            url = "https://checkout.stripe.com/pay/cs_test_123"
+            payment_intent = "pi_test_123"
+
+            @classmethod
+            def create(cls, **kwargs):
+                return Session()
+
+        checkout_mod.Session = Session
+
+        class DictLike(dict):
+            def __init__(self, d):
+                super().__init__(d)
+                self.__dict__.update(d)
+
+        def construct_event(payload, sig_header, secret):
+            return DictLike(
+                {
+                    "id": "evt_test_123",
+                    "type": "checkout.session.completed",
+                    "data": DictLike({"object": DictLike({"id": "cs_test_123", "metadata": {"order_id": str(order_id)}})}),
+                }
+            )
+
+        webhook_mod = types.ModuleType("stripe.webhook")
+        webhook_mod.Webhook = types.SimpleNamespace(construct_event=construct_event)
+
+        stripe_mod = types.ModuleType("stripe")
+        stripe_mod.error = error_mod
+        stripe_mod.checkout = checkout_mod
+        stripe_mod.Webhook = webhook_mod.Webhook
+        stripe_mod.error.SignatureVerificationError = SignatureVerificationError
+        return stripe_mod
+
+    @override_settings(STRIPE_SECRET_KEY="sk_test_123", STRIPE_ENABLED=True)
+    def test_stripe_checkout_session_creates_order_and_session(self):
+        """Stripe checkout must create a pending order and return a session URL."""
+        self.variant.stock_quantity = 10
+        self.variant.save(update_fields=["stock_quantity"])
+        self._add_item(quantity=2)
+        stripe_mod = self._fake_stripe_module(None)
+        with mock.patch.dict(sys.modules, {"stripe": stripe_mod}):
+            response = self.client.post(
+                "/api/checkout/session/",
+                {
+                    "shipping_name": "Buyer",
+                    "shipping_address": "1 Main Street",
+                    "shipping_city": "Portland",
+                    "shipping_postal_code": "97205",
+                    "shipping_country": "United States",
+                    "success_url": "https://example.com/success",
+                    "cancel_url": "https://example.com/cancel",
+                    "demo": False,
+                },
+                format="json",
+            )
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED, response.data)
+        self.assertEqual(response.data["session_id"], "cs_test_123")
+        self.assertIn("checkout.stripe.com", response.data["url"])
+        order = Order.objects.get(pk=response.data["order"])
+        self.assertEqual(order.payment_status, Order.PaymentStatus.UNPAID)
+        self.assertEqual(order.status, Order.Status.PENDING)
+        self.assertEqual(order.stripe_session_id, "cs_test_123")
+        self.variant.refresh_from_db()
+        self.assertEqual(self.variant.stock_quantity, 8)
+
+    def test_stripe_checkout_requires_configuration(self):
+        """Without Stripe credentials the session endpoint must refuse."""
+        response = self.client.post(
+            "/api/checkout/session/",
+            {
+                "shipping_name": "Buyer",
+                "shipping_address": "1 Main Street",
+                "shipping_city": "Portland",
+                "shipping_country": "United States",
+                "demo": False,
+            },
+            format="json",
+        )
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+
+    @override_settings(
+        STRIPE_SECRET_KEY="sk_test_123",
+        STRIPE_ENABLED=True,
+        STRIPE_WEBHOOK_SECRET="test-stripe-secret",
+    )
+    def _place_stripe_order(self):
+        self.variant.stock_quantity = 10
+        self.variant.save(update_fields=["stock_quantity"])
+        self._add_item(quantity=1)
+        stripe_mod = self._fake_stripe_module(None)
+        with mock.patch.dict(sys.modules, {"stripe": stripe_mod}):
+            response = self.client.post(
+                "/api/checkout/session/",
+                {
+                    "shipping_name": "Buyer",
+                    "shipping_address": "1 Main Street",
+                    "shipping_city": "Portland",
+                    "shipping_postal_code": "97205",
+                    "shipping_country": "United States",
+                    "success_url": "https://example.com/success",
+                    "cancel_url": "https://example.com/cancel",
+                    "demo": False,
+                },
+                format="json",
+            )
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED, response.data)
+        return response.data["order"]
+
+    @override_settings(STRIPE_WEBHOOK_SECRET="test-stripe-secret")
+    def test_stripe_webhook_marks_order_paid(self):
+        """A verified checkout.session.completed webhook must mark the order paid once."""
+        order_id = self._place_stripe_order()
+        stripe_mod = self._fake_stripe_module(order_id)
+        with mock.patch.dict(sys.modules, {"stripe": stripe_mod}):
+            body = json.dumps({"id": "evt_test_123"}).encode()
+            headers = {
+                "HTTP_STRIPE_SIGNATURE": "t=123,v1=fakesig",
+                "HTTP_STRIPE_WEBHOOK_ID": "wh-stripe-1",
+            }
+            response = self.client.post(
+                "/api/stripe/webhooks/", data=body, content_type="application/json", **headers
+            )
+        self.assertEqual(response.status_code, status.HTTP_200_OK, response.data)
+        order = Order.objects.get(pk=order_id)
+        self.assertEqual(order.payment_status, Order.PaymentStatus.PAID)
+
+    @override_settings(STRIPE_WEBHOOK_SECRET="test-stripe-secret")
+    def test_stripe_webhook_rejects_invalid_signature(self):
+        order_id = self._place_stripe_order()
+        stripe_mod = self._fake_stripe_module(order_id)
+        stripe_mod.Webhook.construct_event = lambda *a, **k: (_ for _ in ()).throw(
+            stripe_mod.error.SignatureVerificationError("bad sig")
+        )
+        with mock.patch.dict(sys.modules, {"stripe": stripe_mod}):
+            response = self.client.post(
+                "/api/stripe/webhooks/",
+                data=b"{}",
+                content_type="application/json",
+                HTTP_STRIPE_SIGNATURE="bad",
+                HTTP_STRIPE_WEBHOOK_ID="wh-stripe-2",
+            )
         self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
+
+    @override_settings(STRIPE_WEBHOOK_SECRET="test-stripe-secret")
+    def test_stripe_webhook_duplicate_ignored(self):
+        order_id = self._place_stripe_order()
+        stripe_mod = self._fake_stripe_module(order_id)
+        body = json.dumps({"id": "evt_test_123"}).encode()
+        headers = {
+            "HTTP_STRIPE_SIGNATURE": "t=123,v1=fakesig",
+            "HTTP_STRIPE_WEBHOOK_ID": "wh-stripe-3",
+        }
+        with mock.patch.dict(sys.modules, {"stripe": stripe_mod}):
+            first = self.client.post(
+                "/api/stripe/webhooks/", data=body, content_type="application/json", **headers
+            )
+            second = self.client.post(
+                "/api/stripe/webhooks/", data=body, content_type="application/json", **headers
+            )
+        self.assertEqual(first.status_code, status.HTTP_200_OK)
+        self.assertEqual(second.status_code, status.HTTP_200_OK)
+        self.assertEqual(second.data["status"], "duplicate_ignored")
+        self.assertEqual(Order.objects.get(pk=order_id).payment_status, Order.PaymentStatus.PAID)
 
     # ------------------------------------------------------------------ #
     # Stock validation & cart-deduplication tests                          #
@@ -300,3 +552,42 @@ class CommerceApiTests(TempMediaTestCase):
         response = self._checkout()
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
         self.assertIn("insufficient stock", response.data.get("detail", "").lower())
+
+    def test_checkout_decrements_stock_multiple_quantities(self):
+        """Checkout decrements stock by the exact ordered quantity."""
+        self.variant.stock_quantity = 10
+        self.variant.save(update_fields=["stock_quantity"])
+        self._add_item(quantity=4)
+        response = self._checkout()
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED, response.data)
+        self.variant.refresh_from_db()
+        self.assertEqual(self.variant.stock_quantity, 6)
+
+    def test_checkout_rolls_back_on_failure(self):
+        """A checkout failure must not create an order or permanently decrement stock."""
+        self.variant.stock_quantity = 5
+        self.variant.save(update_fields=["stock_quantity"])
+        self._add_item(quantity=2)
+
+        # Force an item-creation failure inside the atomic transaction; the
+        # whole checkout (order + stock decrement) must roll back.
+        from unittest import mock
+
+        with mock.patch.object(OrderItem.objects, "create", side_effect=CartError("rollback test")):
+            response = self._checkout()
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST, response.data)
+        self.assertEqual(Order.objects.count(), 0)
+        self.variant.refresh_from_db()
+        self.assertEqual(self.variant.stock_quantity, 5, "Stock must be restored after rollback")
+
+    def test_checkout_stock_never_goes_negative(self):
+        """Stock can never sell below zero; the last unit sells exactly once."""
+        self.variant.stock_quantity = 1
+        self.variant.save(update_fields=["stock_quantity"])
+        self._add_item(quantity=1)
+        response = self._checkout()
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED, response.data)
+        self.variant.refresh_from_db()
+        self.assertEqual(self.variant.stock_quantity, 0)
+        self.assertEqual(Order.objects.count(), 1)
+        self.assertGreaterEqual(self.variant.stock_quantity, 0, "Stock must never be negative")

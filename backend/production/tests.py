@@ -131,6 +131,116 @@ class ProductionApiTests(TempMediaTestCase):
         response = self.client.post(
             "/api/exports/create/",
             {"design": str(self.design.id), "file_type": "png"},
-            format="json",
         )
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+
+    def test_svg_export_renders_path_elements(self):
+        """Valid Fabric path objects must become real SVG <path> elements."""
+        path_canvas = {
+            "version": "5.3.0",
+            "width": self.area.width_px,
+            "height": self.area.height_px,
+            "objects": [
+                {
+                    "type": "path",
+                    "left": 100,
+                    "top": 100,
+                    "width": 200,
+                    "height": 200,
+                    "fill": "#d95d39",
+                    "stroke": "#111111",
+                    "strokeWidth": 2,
+                    "opacity": 1,
+                    "scaleX": 1,
+                    "scaleY": 1,
+                    "angle": 0,
+                    "path": [
+                        ["M", 0, 0],
+                        ["L", 150, 50],
+                        ["L", 150, 150],
+                        ["z"],
+                    ],
+                },
+            ],
+        }
+        design = Design.objects.create(
+            user=self.admin,
+            product=self.product,
+            stage=self.stage,
+            name="Path design",
+            canvas_json={"stages": {str(self.stage.id): path_canvas}, "activeStage": str(self.stage.id)},
+            status=Design.Status.SAVED,
+        )
+        self.client.force_authenticate(self.admin)
+        response = self.client.post(
+            "/api/exports/create/",
+            {"design": str(design.id), "stage": str(self.stage.id), "file_type": "svg", "dpi": 300},
+            format="json",
+        )
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED, response.data)
+        generated = GeneratedFile.objects.get(pk=response.data["id"])
+        with generated.file.open("rb") as handle:
+            content = handle.read()
+        self.assertIn(b"<svg", content)
+        self.assertIn(b"<path ", content)
+        self.assertIn(b"d=\"", content)
+        self.assertNotIn(b"<!-- path object preserved", content)
+
+    def test_svg_export_handles_multiple_and_stroked_paths(self):
+        """Multiple paths, fills, strokes and transforms must all serialize."""
+        path_canvas = {
+            "version": "5.3.0",
+            "width": self.area.width_px,
+            "height": self.area.height_px,
+            "objects": [
+                {
+                    "type": "path",
+                    "left": 50,
+                    "top": 50,
+                    "fill": "#ffffff",
+                    "stroke": "#000000",
+                    "strokeWidth": 4,
+                    "scaleX": 1,
+                    "scaleY": 1,
+                    "angle": 0,
+                    "opacity": 1,
+                    "path": [["M", 10, 10], ["L", 90, 90], ["z"]],
+                },
+                {
+                    "type": "path",
+                    "left": 150,
+                    "top": 150,
+                    "fill": "transparent",
+                    "stroke": "#d95d39",
+                    "strokeWidth": 1,
+                    "scaleX": 2,
+                    "scaleY": 2,
+                    "angle": 45,
+                    "opacity": 0.5,
+                    "path": [["M", 0, 0], ["C", 10, 10, 20, 20, 30, 30], ["z"]],
+                },
+            ],
+        }
+        design = Design.objects.create(
+            user=self.admin,
+            product=self.product,
+            stage=self.stage,
+            name="Multi path design",
+            canvas_json={"stages": {str(self.stage.id): path_canvas}, "activeStage": str(self.stage.id)},
+            status=Design.Status.SAVED,
+        )
+        self.client.force_authenticate(self.admin)
+        response = self.client.post(
+            "/api/exports/create/",
+            {"design": str(design.id), "stage": str(self.stage.id), "file_type": "svg", "dpi": 300},
+            format="json",
+        )
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED, response.data)
+        generated = GeneratedFile.objects.get(pk=response.data["id"])
+        with generated.file.open("rb") as content_handle:
+            content = content_handle.read()
+        self.assertEqual(content.count(b"<path "), 2)
+        self.assertIn(b'stroke="#000000"', content)
+        self.assertIn(b'stroke="#d95d39"', content)
+        self.assertIn(b'fill="#ffffff"', content)
+        self.assertIn(b'opacity="0.5"', content)

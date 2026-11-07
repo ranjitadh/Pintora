@@ -19,9 +19,10 @@ class AuthApiTests(APITestCase):
             format="json",
         )
         self.assertEqual(response.status_code, status.HTTP_201_CREATED)
-        self.assertIn("access", response.data)
         self.assertEqual(response.data["user"]["email"], "new.user@example.com")
         self.assertEqual(response.data["user"]["role"], "customer")
+        self.assertIn("printora_access", response.cookies)
+        self.assertIn("printora_refresh", response.cookies)
 
     def test_register_rejects_duplicate_email_case_insensitively(self):
         make_user(email="taken@example.com")
@@ -54,8 +55,8 @@ class AuthApiTests(APITestCase):
             "/api/auth/login/", {"email": "SHOPPER@example.com", "password": TEST_PASSWORD}, format="json"
         )
         self.assertEqual(login.status_code, status.HTTP_200_OK)
-        access = login.data["access"]
-        self.client.credentials(HTTP_AUTHORIZATION=f"Bearer {access}")
+        self.assertEqual(login.data["user"]["email"], "shopper@example.com")
+        self.assertIn("printora_access", login.cookies)
 
         me = self.client.get("/api/auth/me/")
         self.assertEqual(me.status_code, status.HTTP_200_OK)

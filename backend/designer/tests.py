@@ -1,7 +1,9 @@
+from django.test import override_settings
 from rest_framework import status
 
 from core.testing import TempMediaTestCase, design_payload, make_product, make_user, png_upload
 from designer.models import Design, DesignAsset
+from designer.validation import DesignValidationError, validate_canvas
 
 
 class DesignerApiTests(TempMediaTestCase):
@@ -215,3 +217,24 @@ class DesignerApiTests(TempMediaTestCase):
         )
         with self.assertRaises(DesignValidationError):
             validate_canvas(canvas_external)
+
+    def test_image_src_validation_accepts_custom_domain_from_allowed_image_hosts(self):
+        from django.test import override_settings
+
+        stage_id = str(self.stage.id)
+
+        with override_settings(ALLOWED_IMAGE_HOSTS=["example.com"]):
+            canvas = design_payload(self.stage)
+            canvas["stages"][stage_id]["objects"].append(
+                {"type": "image", "src": "https://Example.COM/media/uploads/user_1/photo.png", "width": 100, "height": 100}
+            )
+            self.assertIsNotNone(validate_canvas(canvas))
+
+    def test_image_src_validation_rejects_custom_domain_not_in_allowed_hosts(self):
+        stage_id = str(self.stage.id)
+        canvas = design_payload(self.stage)
+        canvas["stages"][stage_id]["objects"].append(
+            {"type": "image", "src": "https://unapproved.example.com/media/exploit.png", "width": 100, "height": 100}
+        )
+        with self.assertRaises(DesignValidationError):
+            validate_canvas(canvas)

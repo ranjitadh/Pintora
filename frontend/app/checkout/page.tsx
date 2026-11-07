@@ -3,10 +3,10 @@
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
-import { ArrowLeft, Lock, ShieldCheck, Truck } from "lucide-react";
+import { ArrowLeft, Lock, ShieldCheck, Truck, CreditCard } from "lucide-react";
 import { api, errorMessage, mediaUrl } from "@/lib/api";
 import { notifyCart, useAuth } from "@/lib/auth";
-import type { Cart, Order } from "@/lib/types";
+import type { Cart, Order, StoreConfig } from "@/lib/types";
 import { money } from "@/lib/utils";
 import { Alert, Button, Field, LinkButton, LoadingBlock } from "@/components/ui";
 
@@ -14,6 +14,7 @@ export default function CheckoutPage() {
   const router = useRouter();
   const { user, loading: authLoading } = useAuth();
   const [cart, setCart] = useState<Cart | null>(null);
+  const [config, setConfig] = useState<StoreConfig | null>(null);
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState("");
@@ -45,13 +46,17 @@ export default function CheckoutPage() {
     api
       .get<Cart>("/cart/")
       .then(setCart)
-      .catch((err) => setError(errorMessage(err)))
+      .catch((err) => setError(errorMessage(err)));
+    api
+      .get<StoreConfig>("/store/config/")
+      .then(setConfig)
+      .catch(() => setConfig(null))
       .finally(() => setLoading(false));
   }, [user, authLoading]);
 
   const update = (key: keyof typeof form, value: string) => setForm((current) => ({ ...current, [key]: value }));
 
-  const submit = async (event: React.FormEvent) => {
+  const submitDemo = async (event: React.FormEvent) => {
     event.preventDefault();
     setSubmitting(true);
     setError("");
@@ -59,6 +64,18 @@ export default function CheckoutPage() {
       const order = await api.post<Order>("/orders/", { ...form, demo: true });
       notifyCart();
       router.push(`/orders/${order.id}?placed=1`);
+    } catch (err) {
+      setError(errorMessage(err));
+      setSubmitting(false);
+    }
+  };
+
+  const createStripeSession = async () => {
+    setSubmitting(true);
+    setError("");
+    try {
+      const data = await api.post<{ order: string; order_number: string; session_id: string; url: string; status: string }>("/checkout/session/", { ...form, demo: false });
+      window.location.href = data.url;
     } catch (err) {
       setError(errorMessage(err));
       setSubmitting(false);
@@ -85,6 +102,8 @@ export default function CheckoutPage() {
     );
   }
 
+  const stripeConfigured = config?.stripe_configured;
+
   return (
     <div className="container-x py-10 lg:py-14">
       <Link href="/cart" className="inline-flex items-center gap-1.5 text-xs font-semibold text-muted hover:text-ink">
@@ -96,7 +115,7 @@ export default function CheckoutPage() {
       </div>
 
       <div className="mt-8 grid items-start gap-8 lg:grid-cols-[1fr_380px]">
-        <form onSubmit={submit} className="card space-y-5 p-6 sm:p-8">
+        <form onSubmit={submitDemo} className="card space-y-5 p-6 sm:p-8">
           {error && <Alert>{error}</Alert>}
           <div className="grid gap-4 sm:grid-cols-2">
             <Field label="Full name">
@@ -124,18 +143,40 @@ export default function CheckoutPage() {
             <textarea rows={3} value={form.notes} onChange={(event) => update("notes", event.target.value)} className="field resize-none" />
           </Field>
 
-          <div className="rounded-2xl border border-ink/10 bg-sand/40 p-4">
-            <div className="flex items-center gap-2 text-sm font-semibold"><Lock size={15} /> Demo payment</div>
-            <p className="mt-1 text-xs leading-relaxed text-muted">
-              This storefront is running in demo mode. Placing the order marks it as demo-paid and moves it into the
-              production workflow. No card details are collected and no real charge is made.
-            </p>
-          </div>
+          {stripeConfigured ? (
+            <div className="rounded-2xl border border-clay/20 bg-clay/5 p-4">
+              <div className="flex items-center gap-2 text-sm font-semibold"><CreditCard size={15} /> Card payment (Stripe)</div>
+              <p className="mt-1 text-xs leading-relaxed text-muted">
+                You&rsquo;ll be redirected to Stripe to complete your card payment. No card details are stored by Printora.
+              </p>
+            </div>
+          ) : (
+            <div className="rounded-2xl border border-ink/10 bg-sand/40 p-4">
+              <div className="flex items-center gap-2 text-sm font-semibold"><Lock size={15} /> Demo payment</div>
+              <p className="mt-1 text-xs leading-relaxed text-muted">
+                This storefront is running in demo mode. Placing the order marks it as demo-paid and moves it into the
+                production workflow. No card details are collected and no real charge is made.
+              </p>
+            </div>
+          )}
 
-          <Button type="submit" size="lg" className="w-full" loading={submitting}>
-            Place demo order · {money(cart.totals.total)}
-          </Button>
-          <p className="text-center text-[10px] text-muted">By placing this order you agree to the demo store terms.</p>
+          <div className="mt-4 grid gap-2">
+            {stripeConfigured ? (
+              <Button type="button" size="lg" className="w-full" onClick={createStripeSession} loading={submitting}>
+                <CreditCard size={16} /> Pay with card · {money(cart.totals.total)}
+              </Button>
+            ) : (
+              <Button type="submit" size="lg" className="w-full" loading={submitting}>
+                Place demo order · {money(cart.totals.total)}
+              </Button>
+            )}
+            {!stripeConfigured && (
+              <Button type="submit" size="lg" className="w-full" variant="outline" loading={submitting}>
+                Place demo order · {money(cart.totals.total)}
+              </Button>
+            )}
+          </div>
+          <p className="text-center text-[10px] text-muted">By placing this order you agree to the store terms.</p>
         </form>
 
         <aside className="card space-y-4 p-6 lg:sticky lg:top-24">

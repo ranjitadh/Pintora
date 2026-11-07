@@ -1,7 +1,7 @@
 "use client";
 
 import { createContext, useCallback, useContext, useEffect, useMemo, useState } from "react";
-import { api, cacheUser, cachedUser, clearSession, getAccessToken, setTokens } from "./api";
+import { api, onLogout } from "./api";
 import type { Cart, User } from "./types";
 
 interface AuthContextValue {
@@ -10,7 +10,15 @@ interface AuthContextValue {
   cartCount: number;
   isAdmin: boolean;
   login: (email: string, password: string) => Promise<User>;
-  register: (payload: { email: string; first_name: string; last_name: string; password: string; password_confirm: string }) => Promise<User>;
+  register: (
+    payload: {
+      email: string;
+      first_name: string;
+      last_name: string;
+      password: string;
+      password_confirm: string;
+    }
+  ) => Promise<User>;
   logout: () => void;
   refreshUser: () => Promise<void>;
   refreshCart: () => Promise<void>;
@@ -24,10 +32,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [cartCount, setCartCount] = useState(0);
 
   const loadCart = useCallback(async () => {
-    if (!getAccessToken()) {
-      setCartCount(0);
-      return;
-    }
     try {
       const cart = await api.get<Cart>("/cart/");
       setCartCount(cart.item_count);
@@ -37,22 +41,15 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   useEffect(() => {
-    const cached = cachedUser();
-    if (cached) setUser(cached);
-    if (!getAccessToken()) {
-      setLoading(false);
-      return;
-    }
+    // Tokens live in HttpOnly cookies; confirm the session with /auth/me/.
     api
       .get<User>("/auth/me/")
       .then((data) => {
         setUser(data);
-        cacheUser(data);
         loadCart();
       })
       .catch(() => {
         setUser(null);
-        clearSession();
       })
       .finally(() => setLoading(false));
   }, [loadCart]);
@@ -63,37 +60,51 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     return () => window.removeEventListener("printora:cart", handler);
   }, [loadCart]);
 
+  useEffect(() => {
+    const unsubscribe = onLogout(() => {
+      setUser(null);
+      setCartCount(0);
+    });
+    return unsubscribe;
+  }, []);
+
   const login = useCallback(async (email: string, password: string) => {
     const data = await api.post("/auth/login/", { email, password }, { auth: false });
-    setTokens(data.access, data.refresh);
-    cacheUser(data.user);
-    setUser(data.user);
+    setUser(data.user as User);
     loadCart();
     return data.user as User;
   }, [loadCart]);
 
   const register = useCallback(
-    async (payload: { email: string; first_name: string; last_name: string; password: string; password_confirm: string }) => {
+    async (payload: {
+      email: string;
+      first_name: string;
+      last_name: string;
+      password: string;
+      password_confirm: string;
+    }) => {
       const data = await api.post("/auth/register/", payload, { auth: false });
-      setTokens(data.access, data.refresh);
-      cacheUser(data.user);
-      setUser(data.user);
+      setUser(data.user as User);
       loadCart();
       return data.user as User;
     },
     [loadCart]
   );
 
-  const logout = useCallback(() => {
-    clearSession();
+  const logout = useCallback(async () => {
+    try {
+      await api.post("/auth/logout/", {}, { auth: false });
+    } catch {
+      // Ignore logout errors; clear local state regardless.
+    }
     setUser(null);
     setCartCount(0);
+    window.dispatchEvent(new Event("printora:logout"));
   }, []);
 
   const refreshUser = useCallback(async () => {
     const data = await api.get<User>("/auth/me/");
     setUser(data);
-    cacheUser(data);
   }, []);
 
   const refreshCart = useCallback(async () => {

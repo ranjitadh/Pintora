@@ -328,6 +328,7 @@ export interface StoreConfig {
   shopify_domain: string;
   shopify_enabled: boolean;
   shopify_credentials_configured: boolean;
+  stripe_configured: boolean;
   announcement: string;
   settings: any;
 }

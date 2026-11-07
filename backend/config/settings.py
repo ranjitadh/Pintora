@@ -41,6 +41,7 @@ MIDDLEWARE = [
     "django.contrib.sessions.middleware.SessionMiddleware",
     "django.middleware.common.CommonMiddleware",
     "django.middleware.csrf.CsrfViewMiddleware",
+    "accounts.middleware.CookieAuthCSRFMiddleware",
     "django.contrib.auth.middleware.AuthenticationMiddleware",
     "django.contrib.messages.middleware.MessageMiddleware",
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
@@ -103,7 +104,7 @@ DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 
 REST_FRAMEWORK = {
     "DEFAULT_AUTHENTICATION_CLASSES": (
-        "rest_framework_simplejwt.authentication.JWTAuthentication",
+        "accounts.authentication.AuthCookieAuthentication",
     ),
     "DEFAULT_PERMISSION_CLASSES": ("rest_framework.permissions.AllowAny",),
     "DEFAULT_PAGINATION_CLASS": "core.pagination.StandardPagination",
@@ -139,12 +140,27 @@ CORS_ALLOWED_ORIGINS = [
 CORS_ALLOW_CREDENTIALS = True
 CSRF_TRUSTED_ORIGINS = CORS_ALLOWED_ORIGINS
 
+# HttpOnly JWT cookie configuration. Tokens are set by login/register and
+# sent automatically by the browser on every same-origin request; they are
+# never readable by JavaScript.
+AUTH_ACCESS_COOKIE = "printora_access"
+AUTH_REFRESH_COOKIE = "printora_refresh"
+AUTH_COOKIE_SECURE = not DEBUG
+AUTH_COOKIE_SAMESITE = "Lax"
+# Require a CSRF token on state-changing requests when authenticated via cookie.
+# Safe in production; disabled in local dev so the dev server and E2E suite
+# keep working without a CSRF round-trip.
+ENFORCE_CSRF_COOKIE_AUTH = not DEBUG
+
 FILE_UPLOAD_MAX_MEMORY_SIZE = 15 * 1024 * 1024
 DATA_UPLOAD_MAX_MEMORY_SIZE = 30 * 1024 * 1024
 MAX_UPLOAD_BYTES = int(os.getenv("MAX_UPLOAD_BYTES", str(15 * 1024 * 1024)))
 
 SITE_URL = os.getenv("SITE_URL", "http://localhost:3000")
 BACKEND_URL = os.getenv("BACKEND_URL", "http://localhost:8000")
+ALLOWED_IMAGE_HOSTS = [
+    h.strip() for h in os.getenv("ALLOWED_IMAGE_HOSTS", "").split(",") if h.strip()
+]
 
 CELERY_BROKER_URL = os.getenv("CELERY_BROKER_URL", "redis://localhost:6379/0")
 CELERY_RESULT_BACKEND = os.getenv("CELERY_RESULT_BACKEND", "redis://localhost:6379/1")
@@ -155,7 +171,15 @@ SHOPIFY_API_SECRET = os.getenv("SHOPIFY_API_SECRET", "")
 SHOPIFY_ACCESS_TOKEN = os.getenv("SHOPIFY_ACCESS_TOKEN", "")
 SHOPIFY_STORE_DOMAIN = os.getenv("SHOPIFY_STORE_DOMAIN", "")
 SHOPIFY_API_VERSION = os.getenv("SHOPIFY_API_VERSION", "2024-10")
-SHOPIFY_WEBHOOK_SECRET = os.getenv("SHOPIFY_WEBHOOK_SECRET", SHOPIFY_API_SECRET)
+# The webhook signing secret MUST be configured independently of the API secret.
+# Shopify sends X-Shopify-Hmac-Sha256 signed with the app's webhook secret.
+SHOPIFY_WEBHOOK_SECRET = os.getenv("SHOPIFY_WEBHOOK_SECRET", "")
+
+# Stripe is optional. When STRIPE_SECRET_KEY is unset, checkout stays in demo mode.
+STRIPE_SECRET_KEY = os.getenv("STRIPE_SECRET_KEY", "")
+STRIPE_WEBHOOK_SECRET = os.getenv("STRIPE_WEBHOOK_SECRET", "")
+STRIPE_PUBLIC_KEY = os.getenv("STRIPE_PUBLIC_KEY", "")
+STRIPE_ENABLED = env_bool("STRIPE_ENABLED", False)
 
 if not DEBUG:
     SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")

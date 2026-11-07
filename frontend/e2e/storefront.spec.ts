@@ -41,7 +41,7 @@ test.describe("public storefront", () => {
     const slug = payload.results[0].slug;
 
     await page.goto(`/editor/${slug}`);
-    await expect(page.getByRole("button", { name: /Add to cart/i })).toBeVisible({ timeout: 30_000 });
+    await expect(page.getByRole("button", { name: /Add to cart/i }).first()).toBeVisible({ timeout: 30_000 });
   });
 
   test("template text can be dragged on the canvas", async ({ page, request }) => {
@@ -54,7 +54,7 @@ test.describe("public storefront", () => {
     page.on("pageerror", (error) => pageErrors.push(error.message));
 
     await page.goto("/editor/art-poster");
-    await expect(page.getByRole("button", { name: /Add to cart/i })).toBeVisible({ timeout: 30_000 });
+    await expect(page.getByRole("button", { name: /Add to cart/i }).first()).toBeVisible({ timeout: 30_000 });
     await page.getByRole("button", { name: "Templates" }).click();
     await page.getByText(template.name, { exact: true }).click();
 

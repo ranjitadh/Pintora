@@ -1,7 +1,9 @@
 from decimal import Decimal
 
+from django.conf import settings
 from django.core.files.base import ContentFile
 from django.db import transaction
+from django.db.models import F
 from django.utils import timezone
 
 from catalog.models import PrintingMethod, Product, ProductVariant
@@ -105,7 +107,7 @@ def add_cart_item(user, *, product_id, variant_id=None, design_id=None, printing
         )
 
     if existing:
-        return update_cart_item(existing, target_qty)
+        return update_cart_item(existing, target_qty), False
 
     quote = quote_item(
         product=product, quantity=quantity, variant=variant, design=design, printing_method=printing_method
@@ -121,7 +123,7 @@ def add_cart_item(user, *, product_id, variant_id=None, design_id=None, printing
         line_total=Decimal(quote["total"]),
         configuration={"quote": quote},
     )
-    return item
+    return item, True
 
 
 def update_cart_item(item, quantity):
@@ -148,13 +150,18 @@ def update_cart_item(item, quantity):
     return item
 
 
-@transaction.atomic
-def checkout_cart(user, data):
-    cart = Cart.objects.filter(user=user, status=Cart.Status.ACTIVE).first()
-    if cart is None or not cart.items.exists():
-        raise CartError("Your cart is empty.")
+def _place_order(user, cart, data):
+    """Create a pending order, reserve stock, and build order items.
 
-    # Validate stock and atomically lock variants to prevent overselling
+    Runs inside a transaction so stock reservation, order creation and item
+    creation either all commit or none do.
+    """
+    config = StoreConfiguration.get_solo()
+
+    # Validate stock and atomically lock variants to prevent overselling.
+    # Variants are locked with select_for_update() so concurrent checkouts
+    # serialize, then stock is decremented with an F() expression so the
+    # database performs the read-modify-write atomically.
     for item in cart.items.select_related("variant"):
         if item.variant_id:
             locked_variant = (
@@ -169,10 +176,15 @@ def checkout_cart(user, data):
                     f"Insufficient stock for {locked_variant.name}. "
                     f"Only {locked_variant.stock_quantity} available in stock, but your order requested {item.quantity}."
                 )
-            locked_variant.stock_quantity -= item.quantity
-            locked_variant.save(update_fields=["stock_quantity", "updated_at"])
+            decremented = ProductVariant.objects.filter(
+                pk=item.variant_id, stock_quantity__gte=item.quantity
+            ).update(stock_quantity=F("stock_quantity") - item.quantity, updated_at=timezone.now())
+            if not decremented:
+                raise CartError(
+                    f"Insufficient stock for {locked_variant.name}. "
+                    f"Only {locked_variant.stock_quantity} available in stock, but your order requested {item.quantity}."
+                )
 
-    config = StoreConfiguration.get_solo()
     order = Order.objects.create(
         user=user,
         email=data.get("email") or user.email,
@@ -184,6 +196,8 @@ def checkout_cart(user, data):
         shipping_country=data["shipping_country"],
         notes=data.get("notes", ""),
         currency=config.currency,
+        status=Order.Status.PENDING,
+        payment_status=Order.PaymentStatus.UNPAID,
         metadata={"source": "local_demo_checkout" if config.demo_mode else "local_checkout"},
     )
 
@@ -248,14 +262,6 @@ def checkout_cart(user, data):
     order.shipping = shipping
     order.tax = tax
     order.total = total
-    if data.get("demo", True) and config.demo_mode:
-        order.status = Order.Status.PAID
-        order.payment_status = Order.PaymentStatus.DEMO
-        order.paid_at = timezone.now()
-        order.metadata["payment_note"] = "Demo checkout — no real payment was processed."
-    else:
-        order.status = Order.Status.PENDING
-        order.payment_status = Order.PaymentStatus.UNPAID
     order.save()
 
     cart.status = Cart.Status.CONVERTED
@@ -264,3 +270,79 @@ def checkout_cart(user, data):
         if item.design_id:
             Design.objects.filter(pk=item.design_id).update(status=Design.Status.ORDERED)
     return order
+
+
+@transaction.atomic
+def checkout_cart(user, data):
+    cart = Cart.objects.filter(user=user, status=Cart.Status.ACTIVE).first()
+    if cart is None or not cart.items.exists():
+        raise CartError("Your cart is empty.")
+    order = _place_order(user, cart, data)
+    config = StoreConfiguration.get_solo()
+    if data.get("demo", True) and config.demo_mode:
+        order.status = Order.Status.PAID
+        order.payment_status = Order.PaymentStatus.DEMO
+        order.paid_at = timezone.now()
+        order.metadata["payment_note"] = "Demo checkout — no real payment was processed."
+    order.save()
+    return order
+
+
+@transaction.atomic
+def create_stripe_checkout(user, data, success_url, cancel_url):
+    """Create a pending order and a Stripe Checkout Session for it.
+
+    Amounts are calculated exclusively server-side. The order is left
+    UNPAID until Stripe confirms payment through a verified webhook, so a
+    frontend redirect alone can never mark an order paid.
+    """
+    if not (settings.STRIPE_SECRET_KEY and settings.STRIPE_ENABLED):
+        raise CartError("Stripe is not configured for this storefront.")
+
+    cart = Cart.objects.filter(user=user, status=Cart.Status.ACTIVE).first()
+    if cart is None or not cart.items.exists():
+        raise CartError("Your cart is empty.")
+
+    order = _place_order(user, cart, data)
+
+    import stripe
+
+    stripe.api_key = settings.STRIPE_SECRET_KEY
+
+    line_items = []
+    for item in cart.items.select_related("product", "variant"):
+        unit_amount = int(Decimal(item.unit_price) * 100)
+        if unit_amount <= 0:
+            unit_amount = 0
+        name = item.product.name
+        if item.variant:
+            name = f"{item.product.name} — {item.variant.name}"
+        line_items.append(
+            {
+                "price_data": {
+                    "currency": (order.currency or "usd").lower(),
+                    "product_data": {"name": name},
+                    "unit_amount": unit_amount,
+                },
+                "quantity": item.quantity,
+            }
+        )
+
+    session = stripe.checkout.Session.create(
+        mode="payment",
+        line_items=line_items,
+        success_url=success_url,
+        cancel_url=cancel_url,
+        metadata={
+            "order_id": str(order.id),
+            "order_number": order.number,
+            "user_id": str(user.id),
+        },
+        expires_after=settings.STRIPE_SESSION_EXPIRES_SECONDS if hasattr(settings, "STRIPE_SESSION_EXPIRES_SECONDS") else 86400,
+    )
+
+    order.stripe_session_id = session.id
+    if getattr(session, "payment_intent", None):
+        order.stripe_payment_intent_id = session.payment_intent
+    order.save(update_fields=["stripe_session_id", "stripe_payment_intent_id", "updated_at"])
+    return order, session

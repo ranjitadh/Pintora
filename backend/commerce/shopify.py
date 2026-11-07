@@ -6,6 +6,7 @@ import hashlib
 import hmac
 import logging
 from decimal import Decimal, InvalidOperation
+from django.utils import timezone
 
 import requests
 from django.conf import settings
@@ -124,25 +125,98 @@ def import_products(products: list[dict], user=None) -> dict:
     return {"created": created, "updated": updated, "total": len(products)}
 
 
-def mark_order_from_webhook(payload: dict) -> str:
+def _note_attributes(payload: dict) -> dict:
+    attrs = {}
+    for attr in payload.get("note_attributes", []):
+        if isinstance(attr, dict):
+            name = str(attr.get("name", "")).lower()
+            if name:
+                attrs[name] = attr.get("value")
+    return attrs
+
+
+def _find_local_order(payload: dict):
     from commerce.models import Order
 
-    note_attributes = {
-        str(attr.get("name", "")).lower(): attr.get("value")
-        for attr in payload.get("note_attributes", [])
-        if isinstance(attr, dict)
-    }
+    note_attributes = _note_attributes(payload)
     order_number = note_attributes.get("printora_order_number") or payload.get("name")
     local = None
     if order_number:
         local = Order.objects.filter(number=order_number).first()
     if local is None and payload.get("id"):
         local = Order.objects.filter(shopify_order_id=str(payload["id"])).first()
+    return local
+
+
+def sync_inventory(products: list[dict]) -> dict:
+    """Update local variant stock from Shopify variant inventory quantities."""
+    from catalog.models import Product, ProductVariant
+
+    updated = 0
+    skipped = 0
+    for item in products:
+        shopify_id = item.get("shopify_id")
+        if not shopify_id:
+            skipped += 1
+            continue
+        product = Product.objects.filter(metadata__shopify_id=shopify_id).first()
+        if product is None:
+            skipped += 1
+            continue
+        for variant in item.get("variants", []):
+            sku = variant.get("sku") or ""
+            local_variant = product.variants.filter(sku=sku).first() if sku else None
+            if local_variant is None:
+                skipped += 1
+                continue
+            inventory_qty = variant.get("inventory_quantity")
+            if inventory_qty is None:
+                skipped += 1
+                continue
+            try:
+                qty = int(inventory_qty)
+            except (TypeError, ValueError):
+                skipped += 1
+                continue
+            local_variant.stock_quantity = max(0, qty)
+            local_variant.save(update_fields=["stock_quantity", "updated_at"])
+            updated += 1
+    return {"updated": updated, "skipped": skipped, "total": len(products)}
+
+
+def mark_order_from_webhook(payload: dict, topic: str | None = None) -> str:
+    from commerce.models import Order
+
+    local = _find_local_order(payload)
     if local is None:
         return "no_matching_order"
-    local.shopify_order_id = str(payload.get("id", local.shopify_order_id))
-    local.payment_status = Order.PaymentStatus.PAID
-    if local.status in (Order.Status.PENDING, Order.Status.PAID):
-        local.status = Order.Status.PROCESSING
-    local.save(update_fields=["shopify_order_id", "payment_status", "status", "updated_at"])
+    resolved_topic = str(topic or "").lower()
+    shopify_order_id = str(payload.get("id", local.shopify_order_id))
+    financial_status = str(payload.get("financial_status") or "").lower()
+
+    updates = {"shopify_order_id": shopify_order_id, "updated_at": timezone.now()}
+
+    if resolved_topic == "orders/paid" or financial_status in ("paid", "partially_paid"):
+        updates["payment_status"] = Order.PaymentStatus.PAID
+    elif financial_status in ("unpaid", "pending"):
+        updates["payment_status"] = Order.PaymentStatus.UNPAID
+    elif financial_status in ("refunded", "voided"):
+        updates["payment_status"] = Order.PaymentStatus.REFUNDED
+
+    status_transition = None
+    if resolved_topic == "orders/cancelled" or financial_status == "voided":
+        status_transition = Order.Status.CANCELLED
+    elif resolved_topic == "orders/paid" or financial_status == "paid":
+        if local.status in (Order.Status.PENDING, Order.Status.PAID):
+            status_transition = Order.Status.PROCESSING
+    elif resolved_topic in ("orders/create", "orders/updated"):
+        if local.status == Order.Status.PENDING:
+            status_transition = Order.Status.PROCESSING
+    if status_transition is not None:
+        updates["status"] = status_transition
+
+    if updates:
+        for key, value in updates.items():
+            setattr(local, key, value)
+        local.save(update_fields=list(updates.keys()))
     return "order_updated"

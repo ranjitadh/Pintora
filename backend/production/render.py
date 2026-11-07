@@ -438,6 +438,30 @@ def _svg_fill(value, default="none"):
     return default
 
 
+def _serialize_path(path_data):
+    """Convert Fabric.js path command arrays into an SVG ``d`` string.
+
+    Fabric serializes path objects as ``[["M", x, y], ["L", x, y], ["z"], ...]``
+    (occasionally as a pre-built string). Every entry is validated so malformed
+    commands cannot break SVG output.
+    """
+    if not path_data:
+        return ""
+    if isinstance(path_data, str):
+        return path_data
+    parts = []
+    for entry in path_data:
+        if not isinstance(entry, (list, tuple)) or not entry:
+            continue
+        cmd = str(entry[0]).strip()
+        args = [str(a) for a in entry[1:] if a is not None]
+        if cmd.lower() == "z":
+            parts.append("Z")
+        elif cmd:
+            parts.append(f"{cmd} {' '.join(args)}".strip())
+    return " ".join(parts)
+
+
 def _svg_image_href(src):
     path = _media_path(src)
     if not path:
@@ -543,7 +567,19 @@ def _svg_object(obj) -> str:
             f'height="{height}" href="{href}" preserveAspectRatio="none" {common}/>'
         )
     if obj_type == "path":
-        return f'<!-- path object preserved as raw data: {_svg_escape(str(obj.get("path"))[:200])} -->'
+        d = _serialize_path(obj.get("path"))
+        if not d:
+            return ""
+        left = _num(obj.get("left"))
+        top = _num(obj.get("top"))
+        scale_x = _num(obj.get("scaleX"), 1)
+        scale_y = _num(obj.get("scaleY"), 1)
+        angle = _num(obj.get("angle"))
+        transform = f'translate({left} {top}) rotate({angle} {left} {top}) scale({scale_x} {scale_y})'
+        return (
+            f'<path d="{_svg_escape(d)}" fill="{fill}" {stroke_attr} '
+            f'opacity="{opacity}" transform="{transform}"/>'
+        )
     return ""
 
 

@@ -90,7 +90,7 @@ function OrderDetailContent() {
       {placed && (
         <div className="mt-4">
           <Alert tone="success">
-            Order placed! Your demo payment is confirmed and the studio has your print files.
+            Order placed! {order.payment_status === "paid" ? "Your payment is confirmed" : "Your demo payment is confirmed"} and the studio has your print files.
           </Alert>
         </div>
       )}

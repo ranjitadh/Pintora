@@ -1,9 +1,8 @@
 const API_URL = process.env.NEXT_PUBLIC_API_URL || "/api";
 
-const ACCESS_KEY = "printora_access";
-const REFRESH_KEY = "printora_refresh";
-const USER_KEY = "printora_user";
-
+// Tokens live exclusively in HttpOnly cookies set by the backend. They are
+// never exposed to JavaScript, so there is no localStorage token surface for
+// XSS to steal.
 export class ApiError extends Error {
   status: number;
   data: any;
@@ -16,67 +15,19 @@ export class ApiError extends Error {
   }
 }
 
-export function getAccessToken(): string | null {
-  if (typeof window === "undefined") return null;
-  return window.localStorage.getItem(ACCESS_KEY);
-}
-
-export function getRefreshToken(): string | null {
-  if (typeof window === "undefined") return null;
-  return window.localStorage.getItem(REFRESH_KEY);
-}
-
-export function setTokens(access: string, refresh?: string) {
-  if (typeof window === "undefined") return;
-  window.localStorage.setItem(ACCESS_KEY, access);
-  if (refresh) window.localStorage.setItem(REFRESH_KEY, refresh);
-}
-
-export function clearSession() {
-  if (typeof window === "undefined") return;
-  window.localStorage.removeItem(ACCESS_KEY);
-  window.localStorage.removeItem(REFRESH_KEY);
-  window.localStorage.removeItem(USER_KEY);
-}
-
-export function cachedUser() {
-  if (typeof window === "undefined") return null;
-  try {
-    const raw = window.localStorage.getItem(USER_KEY);
-    return raw ? JSON.parse(raw) : null;
-  } catch {
-    return null;
-  }
-}
-
-export function cacheUser(user: any) {
-  if (typeof window === "undefined") return;
-  window.localStorage.setItem(USER_KEY, JSON.stringify(user));
-}
-
-function slashPath(path: string): string {
-  const [base, query] = path.split("?", 2);
-  const normalized = base.endsWith("/") ? base : `${base}/`;
-  return query ? `${normalized}?${query}` : normalized;
-}
-
 let refreshPromise: Promise<boolean> | null = null;
 
 async function refreshAccess(): Promise<boolean> {
   if (typeof window === "undefined") return false;
-  const refresh = getRefreshToken();
-  if (!refresh) return false;
   if (!refreshPromise) {
     refreshPromise = fetch(`${API_URL}/auth/refresh/`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ refresh }),
+      body: JSON.stringify({}),
+      credentials: "include",
     })
       .then(async (res) => {
         if (!res.ok) return false;
-        const data = await res.json();
-        if (!data.access) return false;
-        setTokens(data.access);
         return true;
       })
       .catch(() => false)
@@ -87,7 +38,38 @@ async function refreshAccess(): Promise<boolean> {
   return refreshPromise;
 }
 
+let csrfToken: string | null = null;
+let csrfPromise: Promise<string | null> | null = null;
+
+async function ensureCsrfToken(): Promise<string | null> {
+  if (typeof window === "undefined") return null;
+  if (csrfToken) return csrfToken;
+  if (!csrfPromise) {
+    csrfPromise = fetch(`${API_URL}/auth/csrf/`, {
+      method: "GET",
+      credentials: "include",
+    })
+      .then(async (res) => {
+        if (!res.ok) return null;
+        const data = await res.json();
+        return data && data.csrfToken ? String(data.csrfToken) : null;
+      })
+      .catch(() => null)
+      .finally(() => {
+        csrfPromise = null;
+      });
+  }
+  return csrfPromise;
+}
+
+function slashPath(path: string): string {
+  const [base, query] = path.split("?", 2);
+  const normalized = base.endsWith("/") ? base : `${base}/`;
+  return query ? `${normalized}?${query}` : normalized;
+}
+
 interface RequestOptions {
+  path?: string;
   method?: string;
   body?: any;
   form?: FormData;
@@ -96,28 +78,40 @@ interface RequestOptions {
   headers?: Record<string, string>;
 }
 
-export async function request<T = any>(path: string, options: RequestOptions = {}): Promise<T> {
-  const { method = "GET", body, form, auth = true, retry = true, headers = {} } = options;
+export async function request<T = any>(options: RequestOptions = {}): Promise<T> {
+  const {
+    method = "GET",
+    body,
+    form,
+    auth = true,
+    retry = true,
+    headers = {},
+  } = options;
+  const isSafe = ["GET", "HEAD", "OPTIONS", "TRACE"].includes(method);
   const finalHeaders: Record<string, string> = { Accept: "application/json", ...headers };
   if (!form && body !== undefined) finalHeaders["Content-Type"] = "application/json";
-  if (auth) {
-    const token = getAccessToken();
-    if (token) finalHeaders.Authorization = `Bearer ${token}`;
+
+  if (!isSafe) {
+    const token = await ensureCsrfToken();
+    if (token) finalHeaders["X-CSRFToken"] = token;
   }
 
-  const res = await fetch(`${API_URL}${slashPath(path)}`, {
+  const res = await fetch(`${API_URL}${slashPath(options.path ?? "/")}`, {
     method,
     headers: finalHeaders,
     body: form ? form : body !== undefined ? JSON.stringify(body) : undefined,
+    credentials: "include",
     cache: "no-store",
   });
 
-  if (res.status === 401 && auth && retry && getRefreshToken()) {
+  if (res.status === 401 && auth && retry) {
     const refreshed = await refreshAccess();
     if (refreshed) {
-      return request<T>(path, { ...options, retry: false });
+      return request<T>({ ...options, retry: false });
     }
-    clearSession();
+    if (typeof window !== "undefined") {
+      window.dispatchEvent(new Event("printora:logout"));
+    }
   }
 
   let data: any = null;
@@ -143,17 +137,17 @@ export async function request<T = any>(path: string, options: RequestOptions = {
 
 export const api = {
   get: <T = any>(path: string, options?: RequestOptions) =>
-    request<T>(path, { ...options, method: "GET" }),
+    request<T>({ ...options, method: "GET", path }),
   post: <T = any>(path: string, body?: any, options?: RequestOptions) =>
-    request<T>(path, { ...options, method: "POST", body }),
+    request<T>({ ...options, method: "POST", path, body }),
   patch: <T = any>(path: string, body?: any, options?: RequestOptions) =>
-    request<T>(path, { ...options, method: "PATCH", body }),
+    request<T>({ ...options, method: "PATCH", path, body }),
   put: <T = any>(path: string, body?: any, options?: RequestOptions) =>
-    request<T>(path, { ...options, method: "PUT", body }),
+    request<T>({ ...options, method: "PUT", path, body }),
   delete: <T = any>(path: string, options?: RequestOptions) =>
-    request<T>(path, { ...options, method: "DELETE" }),
+    request<T>({ ...options, method: "DELETE", path }),
   upload: <T = any>(path: string, form: FormData, options?: RequestOptions) =>
-    request<T>(path, { ...options, method: "POST", form }),
+    request<T>({ ...options, method: "POST", path, form }),
 };
 
 export function mediaUrl(url: string | null | undefined): string {
@@ -171,4 +165,10 @@ export function errorMessage(error: unknown): string {
   if (error instanceof ApiError) return error.message;
   if (error instanceof Error) return error.message;
   return "Something went wrong. Please try again.";
+}
+
+export function onLogout(listener: () => void): () => void {
+  if (typeof window === "undefined") return () => {};
+  window.addEventListener("printora:logout", listener);
+  return () => window.removeEventListener("printora:logout", listener);
 }

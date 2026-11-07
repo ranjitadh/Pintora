@@ -48,43 +48,77 @@ def _string(value, field, max_length=2000):
         raise DesignValidationError(f"{field} is too long.")
 
 
+def _normalize_host(value):
+    return value.strip().lower()
+
+
+def _add_allowed_host(host_or_url, hosts):
+    if not host_or_url:
+        return
+    raw = host_or_url.strip()
+    if not raw or raw == "*":
+        return
+    if "://" not in raw:
+        raw = f"http://{raw}"
+    try:
+        parsed = urlparse(raw)
+        netloc = _normalize_host(parsed.netloc)
+        if netloc:
+            hosts.add(netloc)
+            hosts.add(netloc.split(":")[0])
+    except ValueError:
+        pass
+
+
+def _allowed_image_hosts():
+    hosts = set()
+    _add_allowed_host(settings.BACKEND_URL, hosts)
+    _add_allowed_host(settings.SITE_URL, hosts)
+    for origin in getattr(settings, "CORS_ALLOWED_ORIGINS", []):
+        _add_allowed_host(origin, hosts)
+    for host in getattr(settings, "ALLOWED_HOSTS", []):
+        _add_allowed_host(host, hosts)
+    for host in getattr(settings, "ALLOWED_IMAGE_HOSTS", []):
+        _add_allowed_host(host, hosts)
+    hosts.update(
+        {
+            "localhost",
+            "localhost:8000",
+            "localhost:3000",
+            "127.0.0.1",
+            "127.0.0.1:8000",
+            "127.0.0.1:3000",
+            "backend",
+            "backend:8000",
+            "backend:3000",
+        }
+    )
+    return hosts
+
+
 def _validate_image_src(src):
     if not isinstance(src, str) or not src:
         raise DesignValidationError("Image objects must include a source URL.")
     if src.startswith("data:"):
         raise DesignValidationError("Inline data URLs are not accepted; upload the image first.")
-    if src.startswith(MEDIA_PREFIX) or src.startswith("/media/"):
+    media_prefix = getattr(settings, "MEDIA_URL", "/media/")
+    if not media_prefix.startswith("/"):
+        media_prefix = f"/{media_prefix}"
+    if not media_prefix.endswith("/"):
+        media_prefix = f"{media_prefix}/"
+    if src.startswith(media_prefix):
         return
     parsed = urlparse(src)
-    if not parsed.scheme and parsed.path.startswith(MEDIA_PREFIX):
+    if not parsed.scheme and parsed.path.startswith(media_prefix):
         return
-    allowed_hosts = set()
-    for url in (settings.BACKEND_URL, settings.SITE_URL):
-        try:
-            allowed_hosts.add(urlparse(url).netloc)
-        except ValueError:
-            pass
-    allowed_hosts.update(
-        {"localhost:3000", "localhost:8000", "127.0.0.1:3000", "127.0.0.1:8000", "backend", "backend:8000"}
-    )
-    for host in getattr(settings, "ALLOWED_HOSTS", []):
-        host = host.strip()
-        if host and host != "*":
-            allowed_hosts.add(host)
-            allowed_hosts.add(f"{host}:8000")
-            allowed_hosts.add(f"{host}:3000")
-    for origin in getattr(settings, "CORS_ALLOWED_ORIGINS", []):
-        try:
-            allowed_hosts.add(urlparse(origin).netloc)
-        except ValueError:
-            pass
-
-    netloc = parsed.netloc.lower()
-    netloc_host = netloc.split(":")[0]
-    allowed_base_hosts = {h.lower().split(":")[0] for h in allowed_hosts}
-    if parsed.scheme not in ("http", "https") or (netloc not in allowed_hosts and netloc_host not in allowed_base_hosts):
+    allowed_hosts = _allowed_image_hosts()
+    netloc = _normalize_host(parsed.netloc)
+    netloc_host = netloc.split(":")[0] if netloc else ""
+    if parsed.scheme not in ("http", "https") or not netloc:
         raise DesignValidationError("Images must reference an uploaded Printora asset.")
-    if not parsed.path.startswith(MEDIA_PREFIX) and "/media/" not in parsed.path:
+    if netloc not in allowed_hosts and netloc_host not in allowed_hosts:
+        raise DesignValidationError("Images must reference an uploaded Printora asset.")
+    if not parsed.path.startswith(media_prefix) and "/media/" not in parsed.path:
         raise DesignValidationError("Images must reference an uploaded Printora asset.")
 
 

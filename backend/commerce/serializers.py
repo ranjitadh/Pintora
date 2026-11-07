@@ -73,6 +73,14 @@ class CheckoutSerializer(serializers.Serializer):
     demo = serializers.BooleanField(default=True)
 
 
+class CheckoutSessionSerializer(serializers.Serializer):
+    order = serializers.UUIDField(read_only=True)
+    order_number = serializers.CharField(read_only=True)
+    session_id = serializers.CharField(read_only=True)
+    url = serializers.URLField(read_only=True)
+    status = serializers.CharField(read_only=True)
+
+
 class OrderItemSerializer(serializers.ModelSerializer):
     preview_url = serializers.SerializerMethodField()
     order = serializers.UUIDField(read_only=True)
@@ -144,14 +152,19 @@ class AdminOrderUpdateSerializer(serializers.ModelSerializer):
 
 class StoreConfigSerializer(serializers.ModelSerializer):
     shopify_credentials_configured = serializers.BooleanField(read_only=True)
+    stripe_configured = serializers.SerializerMethodField(read_only=True)
 
     class Meta:
         model = StoreConfiguration
         fields = [
             "store_name", "currency", "tax_rate", "shipping_fee", "free_shipping_threshold",
             "demo_mode", "shopify_domain", "shopify_enabled", "shopify_credentials_configured",
-            "announcement", "settings",
+            "stripe_configured", "announcement", "settings",
         ]
+
+    def get_stripe_configured(self, obj):
+        from django.conf import settings
+        return bool(settings.STRIPE_SECRET_KEY and settings.STRIPE_ENABLED)
 
 
 class WebhookEventSerializer(serializers.ModelSerializer):

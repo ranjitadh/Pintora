@@ -15,6 +15,8 @@ from .views import (
     OrderListCreateView,
     PricingView,
     ShopifyWebhookView,
+    StripeCheckoutSessionView,
+    StripeWebhookView,
     StoreConfigView,
 )
 
@@ -26,8 +28,10 @@ urlpatterns = [
     path("cart/", CartView.as_view(), name="cart"),
     path("cart/items/", CartItemsView.as_view(), name="cart-items"),
     path("cart/items/<uuid:item_id>/", CartItemView.as_view(), name="cart-item"),
+    path("checkout/session/", StripeCheckoutSessionView.as_view(), name="checkout-session"),
     path("orders/", OrderListCreateView.as_view(), name="orders"),
     path("orders/<uuid:pk>/", OrderDetailView.as_view(), name="order-detail"),
+    path("stripe/webhooks/", StripeWebhookView.as_view(), name="stripe-webhook"),
     path("store/config/", StoreConfigView.as_view(), name="store-config"),
     path("admin/store/config/", AdminStoreConfigView.as_view(), name="admin-store-config"),
     path("admin/dashboard/", AdminDashboardView.as_view(), name="admin-dashboard"),

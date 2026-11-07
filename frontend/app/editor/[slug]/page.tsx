@@ -3,7 +3,7 @@
 import { Suspense, useEffect, useState } from "react";
 import { useParams, useSearchParams } from "next/navigation";
 import Link from "next/link";
-import { api, getAccessToken } from "@/lib/api";
+import { api } from "@/lib/api";
 import type { Design, Product, Template } from "@/lib/types";
 import { DesignEditor } from "@/components/design-editor";
 import { Alert, LinkButton, LoadingBlock } from "@/components/ui";
@@ -27,7 +27,7 @@ function EditorLoader() {
         setProduct(data);
 
         const designId = search.get("design");
-        if (designId && getAccessToken()) {
+        if (designId) {
           try {
             const saved = await api.get<Design>(`/designs/${designId}/`);
             if (alive) setDesign(saved);

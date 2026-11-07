@@ -91,6 +91,8 @@ class Order(TimeStampedModel):
     notes = models.TextField(blank=True)
 
     shopify_order_id = models.CharField(max_length=80, blank=True, db_index=True)
+    stripe_session_id = models.CharField(max_length=255, blank=True, db_index=True)
+    stripe_payment_intent_id = models.CharField(max_length=255, blank=True, db_index=True)
     metadata = models.JSONField(default=dict, blank=True)
     paid_at = models.DateTimeField(null=True, blank=True)
 
