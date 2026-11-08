@@ -52,8 +52,8 @@ export function Chatbot({ open: openProp, onOpenChange: onOpenChangeProp }: Chat
 
     try {
       const history = messages.slice(-8).map((m) => ({ role: m.role, content: m.content }));
-      const data = await api.post<AssistantReply>("/api/assistant/chat/", {
-        message: textToSend,
+      const data = await api.post<AssistantReply>("/assistant/chat/", {
+        message: text,
         history,
       });
       addMessage("assistant", data.reply);
