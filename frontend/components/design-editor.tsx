@@ -61,7 +61,6 @@ interface StageState {
 const COLORS = ["#211b16", "#fbf7ef", "#d95d39", "#65714c", "#f2c96b", "#2f5d8a", "#8b4a6b", "#ffffff"];
 
 const TOOL_ITEMS: { id: Tool; label: string; icon: any }[] = [
-  { id: "products", label: "Product", icon: Layout },
   { id: "templates", label: "Templates", icon: Shapes },
   { id: "text", label: "Text", icon: Type },
   { id: "elements", label: "Elements", icon: Grid },
@@ -831,12 +830,6 @@ export function DesignEditor({ product, initialDesign, initialTemplate, initialV
         </div>
 
         <div className="flex items-center gap-2">
-          <Button variant="outline" size="sm" onClick={() => setTool("products")} title="Product">
-            <Layout size={16} />
-          </Button>
-          <Button variant="outline" size="sm" onClick={() => setTool("templates")} title="Templates">
-            <Shapes size={16} />
-          </Button>
           <Button
             variant={showMockupPreview ? "clay" : "outline"}
             size="sm"

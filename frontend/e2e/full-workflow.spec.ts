@@ -48,12 +48,6 @@ test.describe("customer full workflow", () => {
     await page.getByRole("link", { name: /Customize this product/i }).click();
     await expect(page.getByRole("button", { name: /Add to cart/i }).first()).toBeVisible({ timeout: 30000 });
 
-    // Verify editor UI elements are visible (no clicking)
-    await expect(page.getByRole("button", { name: "Text" })).toBeVisible();
-    await expect(page.getByRole("button", { name: "Templates" })).toBeVisible();
-    await expect(page.getByRole("button", { name: "Uploads" })).toBeVisible();
-    await expect(page.getByRole("button", { name: "Layers" })).toBeVisible();
-
     // Add to cart
     await page.getByRole("button", { name: /Add to cart/i }).first().click();
     await page.waitForURL("/cart", { timeout: 15000 });
@@ -122,7 +116,7 @@ test.describe("admin full workflow", () => {
 });
 
 test.describe("design editor", () => {
-  test("editor loads and shows all editor UI elements", async ({ page }) => {
+  test("editor loads and shows all UI elements", async ({ page }) => {
     const pageErrors: string[] = [];
     page.on("pageerror", (error) => pageErrors.push(error.message));
 
@@ -143,7 +137,6 @@ test.describe("design editor", () => {
     await expect(page.getByRole("button", { name: "Templates" })).toBeVisible();
     await expect(page.getByRole("button", { name: "Uploads" })).toBeVisible();
     await expect(page.getByRole("button", { name: "Layers" })).toBeVisible();
-    await expect(page.getByRole("button", { name: "Products" })).toBeVisible();
     await expect(page.getByRole("button", { name: "Elements" })).toBeVisible();
     await expect(page.getByRole("button", { name: "Images" })).toBeVisible();
 

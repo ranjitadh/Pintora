@@ -55,7 +55,7 @@ test.describe("public storefront", () => {
 
     await page.goto("/editor/art-poster");
     await expect(page.getByRole("button", { name: /Add to cart/i }).first()).toBeVisible({ timeout: 30_000 });
-    await page.getByRole("button", { name: "Templates" }).click();
+    await page.getByRole("button", { name: "Templates" }).first().click();
     await page.getByText(template.name, { exact: true }).click();
 
     const canvas = page.locator(".editor-canvas canvas.upper-canvas");
