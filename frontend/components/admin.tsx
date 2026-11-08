@@ -1,11 +1,9 @@
 "use client";
 
 import Link from "next/link";
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useState } from "react";
 import {
-  ArrowLeft,
   BadgeDollarSign,
-  Bell,
   ChevronRight,
   LayoutDashboard,
   LogOut,
@@ -21,8 +19,6 @@ import {
 } from "lucide-react";
 import { useAuth } from "@/lib/auth";
 import { cn } from "@/lib/utils";
-
-const SIDEBAR_STORAGE_KEY = "printora:admin:sidebarCollapsed";
 
 export interface AdminNavItem {
   href: string;
@@ -61,38 +57,11 @@ const SECTIONS: { title: string; items: AdminNavItem[] }[] = [
 
 export function AdminSidebar({ className }: AdminSidebarProps) {
   const { logout } = useAuth();
-  const [collapsed, setCollapsed] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
-  const [mounted, setMounted] = useState(false);
-
-  useEffect(() => {
-    setMounted(true);
-    try {
-      const stored = localStorage.getItem(SIDEBAR_STORAGE_KEY);
-      if (stored !== null) setCollapsed(stored === "true");
-    } catch {}
-
-    // Prevent body scroll when mobile drawer is open
-    if (mobileOpen && typeof document !== "undefined") {
-      document.body.style.overflow = "hidden";
-    } else if (typeof document !== "undefined") {
-      document.body.style.overflow = "";
-    }
-  }, [mobileOpen]);
-
-  const toggleCollapse = useCallback(() => {
-    setCollapsed((prev) => {
-      const next = !prev;
-      try {
-        localStorage.setItem(SIDEBAR_STORAGE_KEY, String(next));
-      } catch {}
-      return next;
-    });
-  }, []);
 
   const closeMobile = useCallback(() => setMobileOpen(false), []);
 
-  const renderNavLinks = (collapsed: boolean) => (
+  const renderNavLinks = () => (
     <nav className="flex-1 space-y-2 px-2 py-3 overflow-y-auto">
       {SECTIONS.map((section) => (
         <div key={section.title} className="mb-2">
@@ -110,13 +79,11 @@ export function AdminSidebar({ className }: AdminSidebarProps) {
                     "flex items-center gap-3 rounded-xl px-3 py-2 text-sm font-medium transition",
                     "text-muted hover:bg-white hover:text-ink"
                   )}
-                  title={collapsed ? item.label : undefined}
-                  aria-label={collapsed ? item.label : undefined}
                 >
                   <div className="shrink-0 rounded-lg bg-ink/5 p-1.5 text-clay">
                     <Icon size={16} />
                   </div>
-                  {!collapsed && <span>{item.label}</span>}
+                  <span>{item.label}</span>
                 </Link>
               );
             })}
@@ -126,21 +93,19 @@ export function AdminSidebar({ className }: AdminSidebarProps) {
     </nav>
   );
 
-  const renderBrand = (collapsed: boolean) => (
-    <Link href="/admin" className="flex items-center gap-2" title={collapsed ? "Printora Studio" : undefined}>
+  const renderBrand = () => (
+    <Link href="/admin" className="flex items-center gap-2">
       <span className="flex h-9 w-9 items-center justify-center rounded-full bg-ink text-cream">
         <Store size={18} />
       </span>
-      {!collapsed && (
-        <span>
-          <span className="block font-display text-xl leading-none">Printora</span>
-          <span className="text-[10px] uppercase tracking-[0.18em] text-muted">Studio admin</span>
-        </span>
-      )}
+      <span>
+        <span className="block font-display text-xl leading-none">Printora</span>
+        <span className="text-[10px] uppercase tracking-[0.18em] text-muted">Studio admin</span>
+      </span>
     </Link>
   );
 
-  const renderSignOut = (collapsed: boolean) => (
+  const renderSignOut = () => (
     <button
       onClick={logout}
       className={cn(
@@ -149,38 +114,29 @@ export function AdminSidebar({ className }: AdminSidebarProps) {
       )}
     >
       <LogOut size={14} />
-      {collapsed ? null : <span>Sign out</span>}
+      Sign out
     </button>
   );
 
   return (
     <>
-      {/* Desktop sidebar: sticky, part of layout flow, not fixed overlay */}
+      {/* Desktop sidebar: always open, sticky */}
       <aside
         className={cn(
           "hidden lg:flex lg:flex-col lg:w-64 lg:shrink-0 lg:sticky lg:top-0 lg:border-r lg:border-ink/10 lg:bg-white",
-          collapsed ? "lg:w-20" : "",
           "flex flex-col border-r border-ink/10 bg-white",
           className
         )}
         aria-label="Main navigation"
       >
         <div className="flex items-center justify-between px-4 h-14 border-b border-ink/10">
-          {renderBrand(collapsed)}
-          <button
-            onClick={toggleCollapse}
-            className="rounded-full p-1.5 text-muted hover:bg-ink/5 hover:text-ink transition"
-            title={collapsed ? "Expand sidebar" : "Collapse sidebar"}
-            aria-label={collapsed ? "Expand sidebar" : "Collapse sidebar"}
-          >
-            {collapsed ? <ChevronRight size={16} /> : <ArrowLeft size={16} />}
-          </button>
+          {renderBrand()}
         </div>
 
-        {renderNavLinks(collapsed)}
+        {renderNavLinks()}
 
         <div className="px-3 pb-4">
-          <div className="px-2 pt-2 card">{renderSignOut(collapsed)}</div>
+          <div className="px-2 pt-2 card">{renderSignOut()}</div>
         </div>
       </aside>
 
@@ -193,7 +149,7 @@ export function AdminSidebar({ className }: AdminSidebarProps) {
         )}
       >
         <div className="flex items-center justify-between px-4 h-14 border-b border-ink/10">
-          {renderBrand(false)}
+          {renderBrand()}
           <button
             onClick={closeMobile}
             className="rounded-full p-1.5 text-muted hover:bg-ink/5 hover:text-ink transition"
@@ -203,7 +159,7 @@ export function AdminSidebar({ className }: AdminSidebarProps) {
           </button>
         </div>
 
-        {renderNavLinks(false)}
+        {renderNavLinks()}
 
         <div className="px-3 pb-4">
           <div className="px-2 pt-2 card">

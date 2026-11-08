@@ -205,6 +205,7 @@ export default function AdminProductsPage() {
             <table className="w-full">
               <thead className="border-b border-ink/10 bg-sand/40">
                 <tr>
+                  <Th>ID</Th>
                   <Th>Product</Th>
                   <Th>Category</Th>
                   <Th>Base price</Th>
@@ -217,6 +218,7 @@ export default function AdminProductsPage() {
               <tbody className="divide-y divide-ink/5">
                 {products.map((product) => (
                   <tr key={product.id} className="hover:bg-sand/20">
+                    <Td className="text-[10px] font-mono text-muted">{product.id.slice(0, 8)}…</Td>
                     <Td>
                       <div className="flex items-center gap-3">
                         <div className="h-10 w-10 shrink-0 overflow-hidden rounded-lg bg-sand">

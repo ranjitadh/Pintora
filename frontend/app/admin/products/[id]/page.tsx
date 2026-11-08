@@ -502,7 +502,7 @@ export default function AdminProductDetailPage() {
       <AdminHeader
         breadcrumbs={[{ label: "Commerce", href: "/admin" }, { label: "Products", href: "/admin/products" }, { label: product.name }]}
         title={product.name}
-        description={`/${product.slug} · updated ${formatDate(product.updated_at)}`}
+        description={`ID: ${product.id} · /${product.slug} · updated ${formatDate(product.updated_at)}`}
         actions={
           <>
             <LinkButton href={`/products/${product.slug}`} size="sm" variant="outline" target="_blank">View in shop</LinkButton>
