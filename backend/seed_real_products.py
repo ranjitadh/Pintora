@@ -5,6 +5,7 @@ Run with: cd backend && .venv/bin/python seed_real_products.py
 import django
 import os
 import sys
+import uuid
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 os.environ.setdefault("DJANGO_SETTINGS_MODULE", "config.settings")
@@ -13,11 +14,13 @@ django.setup()
 from catalog.models import ProductCategory, Product, ProductVariant, ProductImage
 from catalog.models import PrintingMethod, ProductStage, PrintArea, ProductPrintingMethod
 from django.core.files.base import ContentFile
+from django.contrib.auth import get_user_model
 from django.utils.text import slugify
 from decimal import Decimal
-from django.contrib.auth import get_user_model
 
 MEDIA_PRODUCTS_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), "media", "products")
+os.makedirs(MEDIA_PRODUCTS_DIR, exist_ok=True)
+
 
 # Product data from the zip file catalog
 PRODUCTS = [
@@ -89,7 +92,7 @@ PRODUCTS = [
         "description": "Gallery-style canvas wall print featuring a coastal landscape, designed for home or office display.",
         "base_price": Decimal("39.90"),
         "image_file": "coastal-canvas-print.jpg",
-        "variants": [("12×16 in", Decimal("0.00")), ("16×20 in", Decimal("12.00")), ("24×36 in", Decimal("24.00"))],
+        "variants": [("12x16 in", Decimal("0.00")), ("16x20 in", Decimal("12.00")), ("24x36 in", Decimal("24.00"))],
     },
     {
         "slug": "decorative-pillow",
@@ -99,7 +102,7 @@ PRODUCTS = [
         "description": "Soft decorative cushion cover with a printable front panel for personalized home accents.",
         "base_price": Decimal("26.90"),
         "image_file": "decorative-pillow.jpg",
-        "variants": [("16×16 in", Decimal("0.00")), ("18×18 in", Decimal("4.00")), ("20×20 in", Decimal("8.00"))],
+        "variants": [("16x16 in", Decimal("0.00")), ("18x18 in", Decimal("4.00")), ("20x20 in", Decimal("8.00"))],
     },
 ]
 
@@ -147,7 +150,7 @@ def main():
 
     for pdata in PRODUCTS:
         category = categories[pdata["category"]]
-        
+
         # Check if product exists
         product, created = Product.objects.get_or_create(
             slug=pdata["slug"],
@@ -168,7 +171,7 @@ def main():
                 "created_by": admin_user,
             }
         )
-        
+
         if not created:
             # Update existing product
             product.name = pdata["name"]
@@ -199,7 +202,7 @@ def main():
             name="Front",
             defaults={"slug": "front", "mockup_width": 1200, "mockup_height": 1200, "sort_order": 1, "is_active": True},
         )
-        
+
         print_area, _ = PrintArea.objects.get_or_create(
             stage=stage,
             defaults={
@@ -253,5 +256,4 @@ def main():
     print(f"Images in {MEDIA_PRODUCTS_DIR}")
 
 if __name__ == "__main__":
-    import uuid
     main()
