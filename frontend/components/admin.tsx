@@ -71,7 +71,14 @@ export function AdminSidebar({ className }: AdminSidebarProps) {
       const stored = localStorage.getItem(SIDEBAR_STORAGE_KEY);
       if (stored !== null) setCollapsed(stored === "true");
     } catch {}
-  }, []);
+
+    // Prevent body scroll when mobile drawer is open
+    if (mobileOpen && typeof document !== "undefined") {
+      document.body.style.overflow = "hidden";
+    } else if (typeof document !== "undefined") {
+      document.body.style.overflow = "";
+    }
+  }, [mobileOpen]);
 
   const toggleCollapse = useCallback(() => {
     setCollapsed((prev) => {
@@ -85,33 +92,81 @@ export function AdminSidebar({ className }: AdminSidebarProps) {
 
   const closeMobile = useCallback(() => setMobileOpen(false), []);
 
+  const renderNavLinks = (collapsed: boolean) => (
+    <nav className="flex-1 space-y-2 px-2 py-3 overflow-y-auto">
+      {SECTIONS.map((section) => (
+        <div key={section.title} className="mb-2">
+          <h3 className="px-3 mb-1 text-[10px] font-semibold uppercase tracking-wider text-muted">
+            {section.title}
+          </h3>
+          <div className="space-y-0.5">
+            {section.items.map((item) => {
+              const Icon = item.icon;
+              return (
+                <Link
+                  key={item.href}
+                  href={item.href}
+                  className={cn(
+                    "flex items-center gap-3 rounded-xl px-3 py-2 text-sm font-medium transition",
+                    "text-muted hover:bg-white hover:text-ink"
+                  )}
+                  title={collapsed ? item.label : undefined}
+                  aria-label={collapsed ? item.label : undefined}
+                >
+                  <div className="shrink-0 rounded-lg bg-ink/5 p-1.5 text-clay">
+                    <Icon size={16} />
+                  </div>
+                  {!collapsed && <span>{item.label}</span>}
+                </Link>
+              );
+            })}
+          </div>
+        </div>
+      ))}
+    </nav>
+  );
+
+  const renderBrand = (collapsed: boolean) => (
+    <Link href="/admin" className="flex items-center gap-2" title={collapsed ? "Printora Studio" : undefined}>
+      <span className="flex h-9 w-9 items-center justify-center rounded-full bg-ink text-cream">
+        <Store size={18} />
+      </span>
+      {!collapsed && (
+        <span>
+          <span className="block font-display text-xl leading-none">Printora</span>
+          <span className="text-[10px] uppercase tracking-[0.18em] text-muted">Studio admin</span>
+        </span>
+      )}
+    </Link>
+  );
+
+  const renderSignOut = (collapsed: boolean) => (
+    <button
+      onClick={logout}
+      className={cn(
+        "flex w-full items-center gap-2 rounded-lg px-2 py-2 text-xs font-medium transition",
+        "text-muted hover:bg-ink/5 hover:text-ink"
+      )}
+    >
+      <LogOut size={14} />
+      {collapsed ? null : <span>Sign out</span>}
+    </button>
+  );
+
   return (
     <>
-      {/* Desktop sidebar */}
+      {/* Desktop sidebar: sticky, part of layout flow, not fixed overlay */}
       <aside
         className={cn(
-          "fixed inset-y-0 left-0 z-20 flex flex-col border-r border-ink/10 bg-white transition-all duration-300",
-          collapsed ? "w-20" : "w-64",
+          "hidden lg:flex lg:flex-col lg:w-64 lg:shrink-0 lg:sticky lg:top-0 lg:border-r lg:border-ink/10 lg:bg-white",
+          collapsed ? "lg:w-20" : "",
+          "flex flex-col border-r border-ink/10 bg-white",
           className
         )}
         aria-label="Main navigation"
       >
         <div className="flex items-center justify-between px-4 h-14 border-b border-ink/10">
-          <Link
-            href="/admin"
-            className="flex items-center gap-2"
-            title={collapsed ? "Printora Studio" : undefined}
-          >
-            <span className="flex h-9 w-9 items-center justify-center rounded-full bg-ink text-cream">
-              <Store size={18} />
-            </span>
-            {!collapsed && (
-              <span>
-                <span className="block font-display text-xl leading-none">Printora</span>
-                <span className="text-[10px] uppercase tracking-[0.18em] text-muted">Studio admin</span>
-              </span>
-            )}
-          </Link>
+          {renderBrand(collapsed)}
           <button
             onClick={toggleCollapse}
             className="rounded-full p-1.5 text-muted hover:bg-ink/5 hover:text-ink transition"
@@ -122,69 +177,23 @@ export function AdminSidebar({ className }: AdminSidebarProps) {
           </button>
         </div>
 
-        <nav className="flex-1 space-y-2 px-2 py-3 overflow-y-auto">
-          {SECTIONS.map((section) => (
-            <div key={section.title} className="mb-2">
-              <h3 className="px-3 mb-1 text-[10px] font-semibold uppercase tracking-wider text-muted">
-                {section.title}
-              </h3>
-              <div className="space-y-0.5">
-                {section.items.map((item) => {
-                  const Icon = item.icon;
-                  return (
-                    <Link
-                      key={item.href}
-                      href={item.href}
-                      className={cn(
-                        "flex items-center gap-3 rounded-xl px-3 py-2 text-sm font-medium transition",
-                        "text-muted hover:bg-white hover:text-ink"
-                      )}
-                      title={collapsed ? item.label : undefined}
-                      aria-label={collapsed ? item.label : undefined}
-                    >
-                      <div className="shrink-0 rounded-lg bg-ink/5 p-1.5 text-clay">
-                        <Icon size={16} />
-                      </div>
-                      {!collapsed && <span>{item.label}</span>}
-                    </Link>
-                  );
-                })}
-              </div>
-            </div>
-          ))}
-        </nav>
+        {renderNavLinks(collapsed)}
 
         <div className="px-3 pb-4">
-          <div className="px-2 pt-2 card">
-            <button
-              onClick={logout}
-              className={cn(
-                "flex w-full items-center gap-2 rounded-lg px-2 py-2 text-xs font-medium transition",
-                "text-muted hover:bg-ink/5 hover:text-ink"
-              )}
-            >
-              <LogOut size={14} />
-              {collapsed ? "Sign out" : <span>Sign out</span>}
-            </button>
-          </div>
+          <div className="px-2 pt-2 card">{renderSignOut(collapsed)}</div>
         </div>
       </aside>
 
-      {/* Mobile drawer */}
+      {/* Mobile drawer: fixed overlay */}
       <div
         className={cn(
-          "fixed inset-y-0 left-0 z-40 flex flex-col bg-white border-r border-ink/10 transition-transform duration-300",
+          "fixed inset-y-0 left-0 z-50 flex flex-col bg-white border-r border-ink/10 transition-transform duration-300",
           mobileOpen ? "translate-x-0" : "-translate-x-full",
           "lg:hidden w-64"
         )}
       >
         <div className="flex items-center justify-between px-4 h-14 border-b border-ink/10">
-          <Link href="/admin" className="flex items-center gap-2">
-            <span className="flex h-9 w-9 items-center justify-center rounded-full bg-ink text-cream">
-              <Store size={18} />
-            </span>
-            <span className="block font-display text-xl leading-none">Printora</span>
-          </Link>
+          {renderBrand(false)}
           <button
             onClick={closeMobile}
             className="rounded-full p-1.5 text-muted hover:bg-ink/5 hover:text-ink transition"
@@ -194,31 +203,7 @@ export function AdminSidebar({ className }: AdminSidebarProps) {
           </button>
         </div>
 
-        <nav className="flex-1 space-y-2 px-2 py-3 overflow-y-auto">
-          {SECTIONS.map((section) => (
-            <div key={section.title} className="mb-2">
-              <h3 className="px-3 mb-1 text-[10px] font-semibold uppercase tracking-wider text-muted">
-                {section.title}
-              </h3>
-              <div className="space-y-0.5">
-                {section.items.map((item) => (
-                  <Link
-                    key={item.href}
-                    href={item.href}
-                    onClick={closeMobile}
-                    className={cn(
-                      "flex items-center gap-3 rounded-xl px-3 py-2 text-sm font-medium transition",
-                      "text-muted hover:bg-white hover:text-ink"
-                    )}
-                  >
-                    <item.icon size={16} />
-                    {item.label}
-                  </Link>
-                ))}
-              </div>
-            </div>
-          ))}
-        </nav>
+        {renderNavLinks(false)}
 
         <div className="px-3 pb-4">
           <div className="px-2 pt-2 card">
@@ -233,10 +218,10 @@ export function AdminSidebar({ className }: AdminSidebarProps) {
         </div>
       </div>
 
-      {/* Mobile backdrop */}
+      {/* Mobile backdrop: below drawer, above content */}
       {mobileOpen && (
         <div
-          className="fixed inset-0 z-30 bg-black/40 backdrop-blur-sm lg:hidden"
+          className="fixed inset-0 z-40 bg-black/40 backdrop-blur-sm lg:hidden"
           onClick={closeMobile}
         />
       )}

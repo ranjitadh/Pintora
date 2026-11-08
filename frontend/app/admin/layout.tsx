@@ -38,20 +38,18 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
 
   return (
     <EditorShell>
-      <AdminSidebar />
+      <div className="flex lg:flex-row flex-col min-h-screen">
+        <AdminSidebar />
 
-      <div className="container-x relative z-10">
-        <AdminMobileHeader title="Studio" onMenu={() => setMobileMenuOpen(true)} />
+        <div className="flex-1 min-w-0">
+          <div className="container-x relative z-10">
+            <AdminMobileHeader title="Studio" onMenu={() => setMobileMenuOpen(true)} />
 
-        {children}
+            {children}
 
-        {/* Mobile backdrop */}
-        {mobileMenuOpen && (
-          <div
-            className="fixed inset-0 z-30 bg-black/40 backdrop-blur-sm lg:hidden"
-            onClick={() => setMobileMenuOpen(false)}
-          />
-        )}
+            {/* Mobile backdrop rendered by AdminSidebar component */}
+          </div>
+        </div>
       </div>
     </EditorShell>
   );
