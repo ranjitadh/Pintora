@@ -3,6 +3,7 @@
 import { usePathname } from "next/navigation";
 import { SiteHeader } from "@/components/site-header";
 import { SiteFooter } from "@/components/site-footer";
+import { Chatbot } from "@/components/chatbot";
 
 export function EditorShell({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
@@ -14,6 +15,7 @@ export function EditorShell({ children }: { children: React.ReactNode }) {
       {!isEditor && !isAdmin && <SiteHeader />}
       <main>{children}</main>
       {!isEditor && !isAdmin && <SiteFooter />}
+      {!isEditor && !isAdmin && <Chatbot />}
     </>
   );
 }
