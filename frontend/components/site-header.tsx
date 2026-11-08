@@ -7,6 +7,7 @@ import { useAuth } from "@/lib/auth";
 import { api } from "@/lib/api";
 import type { StoreConfig } from "@/lib/types";
 import { cn } from "@/lib/utils";
+import { ThemeToggle } from "@/components/theme-toggle";
 
 const nav = [
   { href: "/shop", label: "Shop" },
@@ -89,6 +90,8 @@ export function SiteHeader() {
                 </span>
               )}
             </Link>
+
+            <ThemeToggle />
 
             <button
               onClick={() => setOpen((value) => !value)}
