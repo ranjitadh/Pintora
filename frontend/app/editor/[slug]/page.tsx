@@ -80,24 +80,39 @@ function EditorLoader() {
 
   const variantParam = search.get("variant") || undefined;
   const methodParam = search.get("method") || undefined;
-  const variantId = product.variants.some((variant) => variant.id === variantParam) ? variantParam : undefined;
-  const methodId = product.printing_methods.some((link) => link.printing_method.id === methodParam) ? methodParam : undefined;
+  const issues: string[] = [];
+
+  let variantId: string | undefined;
+  if (variantParam) {
+    const requestedVariant = product.variants.find((variant) => variant.id === variantParam);
+    if (!requestedVariant) {
+      issues.push("The requested colour/size is not available for this product, so the default configuration is shown.");
+    } else if (!requestedVariant.is_active) {
+      issues.push("The requested colour/size is currently unavailable, so the default configuration is shown.");
+    } else {
+      variantId = requestedVariant.id;
+    }
+  }
+
+  let methodId: string | undefined;
+  if (methodParam) {
+    const requestedMethod = product.printing_methods.find((link) => link.printing_method.id === methodParam);
+    if (!requestedMethod) {
+      issues.push("The requested printing method is not available for this product, so the default method is shown.");
+    } else {
+      methodId = methodParam;
+    }
+  }
 
   return (
-    <>
-      {error && (
-        <div className="container-x pt-4">
-          <Alert>{error}</Alert>
-        </div>
-      )}
-      <DesignEditor
-        product={product}
-        initialDesign={design}
-        initialTemplate={template}
-        initialVariantId={variantId}
-        initialMethodId={methodId}
-      />
-    </>
+    <DesignEditor
+      product={product}
+      initialDesign={design}
+      initialTemplate={template}
+      initialVariantId={variantId}
+      initialMethodId={methodId}
+      initialError={[error, ...issues].filter(Boolean).join(" ")}
+    />
   );
 }
 

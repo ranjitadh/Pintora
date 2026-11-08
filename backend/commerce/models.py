@@ -183,3 +183,17 @@ class WebhookEvent(TimeStampedModel):
                 condition=~models.Q(external_id=""),
             )
         ]
+
+
+class NewsletterSubscriber(TimeStampedModel):
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    email = models.EmailField(unique=True)
+    source = models.CharField(max_length=40, blank=True, default="footer")
+    is_active = models.BooleanField(default=True)
+
+    class Meta:
+        ordering = ["-created_at"]
+
+    def __str__(self):
+        return self.email
+

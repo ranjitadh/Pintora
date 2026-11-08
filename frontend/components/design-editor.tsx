@@ -6,12 +6,8 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   ArrowLeft,
   ArrowRight,
-  Check,
-  ChevronDown,
-  ChevronLeft,
   ChevronRight,
   Circle,
-  Download,
   Grid,
   Image as ImageIcon,
   Layers,
@@ -20,6 +16,7 @@ import {
   Maximize,
   Minimize,
   Minus,
+  Move,
   Plus,
   Redo2,
   RotateCcw,
@@ -35,6 +32,8 @@ import {
   Undo2,
   UploadCloud,
   X,
+  ZoomIn,
+  ZoomOut,
 } from "lucide-react";
 import { api, errorMessage, mediaUrl } from "@/lib/api";
 import { notifyCart, useAuth } from "@/lib/auth";
@@ -50,6 +49,7 @@ interface EditorProps {
   initialTemplate: Template | null;
   initialVariantId?: string;
   initialMethodId?: string;
+  initialError?: string;
 }
 
 interface StageState {
@@ -61,6 +61,7 @@ interface StageState {
 const COLORS = ["#211b16", "#fbf7ef", "#d95d39", "#65714c", "#f2c96b", "#2f5d8a", "#8b4a6b", "#ffffff"];
 
 const TOOL_ITEMS: { id: Tool; label: string; icon: any }[] = [
+  { id: "products", label: "Product", icon: Layout },
   { id: "templates", label: "Templates", icon: Shapes },
   { id: "text", label: "Text", icon: Type },
   { id: "elements", label: "Elements", icon: Grid },
@@ -115,9 +116,16 @@ function scaleCanvasJson(json: any, area: any) {
   return copy;
 }
 
-export function DesignEditor({ product, initialDesign, initialTemplate, initialVariantId, initialMethodId }: EditorProps) {
+export function DesignEditor({
+  product,
+  initialDesign,
+  initialTemplate,
+  initialVariantId,
+  initialMethodId,
+  initialError,
+}: EditorProps) {
   const router = useRouter();
-  const { user, cartCount } = useAuth();
+  const { user, cartCount, isAdmin } = useAuth();
   const canvasElRef = useRef<HTMLCanvasElement | null>(null);
   const fabricRef = useRef<any>(null);
   const fabricLibRef = useRef<any>(null);
@@ -134,7 +142,7 @@ export function DesignEditor({ product, initialDesign, initialTemplate, initialV
   const [dirty, setDirty] = useState(false);
   const [saving, setSaving] = useState(false);
   const [savedAt, setSavedAt] = useState<Date | null>(null);
-  const [error, setError] = useState("");
+  const [error, setError] = useState(initialError || "");
   const [notice, setNotice] = useState("");
   const [tool, setTool] = useState<Tool>("products");
   const [panelOpen, setPanelOpen] = useState(false);
@@ -170,6 +178,13 @@ export function DesignEditor({ product, initialDesign, initialTemplate, initialV
   const [adding, setAdding] = useState(false);
   const [downloading, setDownloading] = useState(false);
   const [showMockupPreview, setShowMockupPreview] = useState(false);
+  const [zoom, setZoom] = useState(1);
+  const [pan, setPan] = useState({ x: 0, y: 0 });
+  const [panMode, setPanMode] = useState(false);
+  const [panning, setPanning] = useState(false);
+  const panStart = useRef<{ x: number; y: number; panX: number; panY: number } | null>(null);
+  const workspaceRef = useRef<HTMLDivElement | null>(null);
+  const [workspaceSize, setWorkspaceSize] = useState({ width: 0, height: 0 });
 
   const activeStage = useMemo(
     () => product.stages.find((stage) => stage.id === activeStageId) || product.stages[0],
@@ -184,6 +199,46 @@ export function DesignEditor({ product, initialDesign, initialTemplate, initialV
   useEffect(() => {
     dirtyRef.current = dirty;
   }, [dirty]);
+
+  useEffect(() => {
+    if (!notice) return;
+    const timer = window.setTimeout(() => setNotice(""), 4500);
+    return () => window.clearTimeout(timer);
+  }, [notice]);
+
+  useEffect(() => {
+    const element = workspaceRef.current;
+    if (!element) return;
+    const measure = () => {
+      setWorkspaceSize({ width: element.clientWidth, height: element.clientHeight });
+    };
+    measure();
+    const observer = new ResizeObserver(measure);
+    observer.observe(element);
+    return () => observer.disconnect();
+  }, []);
+
+  useEffect(() => {
+    setZoom(1);
+    setPan({ x: 0, y: 0 });
+    setPanMode(false);
+    setPanning(false);
+    panStart.current = null;
+  }, [activeStageId]);
+
+  useEffect(() => {
+    if (!showMockupPreview && !panMode) return;
+    const canvas = fabricRef.current;
+    if (!canvas) return;
+    canvas.discardActiveObject();
+    canvas.requestRenderAll();
+    setSelected(null);
+  }, [showMockupPreview, panMode]);
+
+  const selectTool = useCallback((id: Tool) => {
+    setTool(id);
+    setPanelOpen(true);
+  }, []);
 
   const refreshLayers = useCallback(() => {
     const canvas = fabricRef.current;
@@ -301,6 +356,7 @@ export function DesignEditor({ product, initialDesign, initialTemplate, initialV
         refreshLayers();
         notifySelection();
         setNotice(`Applied “${template.name}” — make it yours.`);
+        setPanelOpen(false);
       });
     },
     [notifySelection, product.stages, refreshLayers]
@@ -414,21 +470,25 @@ export function DesignEditor({ product, initialDesign, initialTemplate, initialV
   }, [fabricModule, ready, activeStageId, product.stages]);
 
   useEffect(() => {
-    if (!user) {
-      setQuote(null);
-      return;
-    }
+    let cancelled = false;
     const payload: any = {
       product: product.id,
       variant: variantId || undefined,
       printing_method: methodId || undefined,
       quantity,
     };
-    if (designIdRef.current) payload.design = designIdRef.current;
+    if (user && designIdRef.current) payload.design = designIdRef.current;
     api
       .post<Quote>("/pricing/", payload)
-      .then(setQuote)
-      .catch(() => setQuote(null));
+      .then((data) => {
+        if (!cancelled) setQuote(data);
+      })
+      .catch(() => {
+        if (!cancelled) setQuote(null);
+      });
+    return () => {
+      cancelled = true;
+    };
   }, [user, product.id, variantId, methodId, quantity, savedAt, activeStageId]);
 
   const buildPayload = useCallback(() => {
@@ -475,6 +535,9 @@ export function DesignEditor({ product, initialDesign, initialTemplate, initialV
         if (!designIdRef.current) {
           const created = await api.post<Design>("/designs/", { ...payload, status: "saved" });
           designIdRef.current = created.id;
+          const url = new URL(window.location.href);
+          url.searchParams.set("design", created.id);
+          window.history.replaceState(window.history.state, "", url.toString());
           setNotice("Design saved to your studio.");
         } else if (autosave) {
           await api.post(`/designs/${designIdRef.current}/autosave/`, payload);
@@ -531,6 +594,7 @@ export function DesignEditor({ product, initialDesign, initialTemplate, initialV
     canvas.renderAll();
     setNewText("");
     refreshLayers();
+    setPanelOpen(false);
   };
 
   const addShape = (shape: "rect" | "circle" | "triangle") => {
@@ -555,9 +619,16 @@ export function DesignEditor({ product, initialDesign, initialTemplate, initialV
     canvas.setActiveObject(object);
     canvas.renderAll();
     refreshLayers();
+    setPanelOpen(false);
   };
 
-  const addImage = (url: string, naturalWidth = 800, naturalHeight = 800, name?: string) => {
+  const addImage = (
+    url: string,
+    naturalWidth = 800,
+    naturalHeight = 800,
+    name?: string,
+    printoraType: "image" | "clipart" = "image"
+  ) => {
     const fabric = fabricLibRef.current;
     const canvas = fabricRef.current;
     if (!fabric || !canvas || !activeArea) return;
@@ -576,11 +647,13 @@ export function DesignEditor({ product, initialDesign, initialTemplate, initialV
           scaleX: scale,
           scaleY: scale,
         });
+        image.set({ printoraType });
         if (name) image.set({ name });
         canvas.add(image);
         canvas.setActiveObject(image);
         canvas.renderAll();
         refreshLayers();
+        setPanelOpen(false);
       },
       { crossOrigin: "anonymous" }
     );
@@ -713,6 +786,10 @@ export function DesignEditor({ product, initialDesign, initialTemplate, initialV
       router.push(`/login?next=${encodeURIComponent(window.location.pathname + window.location.search)}`);
       return;
     }
+    if (!ready || !activeStageRef.current) {
+      setError("The design canvas is still loading. Please try again in a moment.");
+      return;
+    }
     setAdding(true);
     setError("");
     try {
@@ -749,8 +826,12 @@ export function DesignEditor({ product, initialDesign, initialTemplate, initialV
       if (!id) return;
       const dpi = fileType === "png" ? 150 : 300;
       const file = await api.post<GeneratedFile>("/exports/create/", { design: id, file_type: fileType, dpi });
-      if (file.url) window.open(mediaUrl(file.url), "_blank");
-      setNotice(`Print-ready ${fileType.toUpperCase()} generated.`);
+      if (file.url) {
+        window.open(mediaUrl(file.url), "_blank");
+        setNotice(`Print-ready ${fileType.toUpperCase()} generated.`);
+      } else {
+        setNotice(`${fileType.toUpperCase()} export queued — it will appear in your studio when ready.`);
+      }
     } catch (err) {
       setError(errorMessage(err));
     } finally {
@@ -782,6 +863,49 @@ export function DesignEditor({ product, initialDesign, initialTemplate, initialV
     ? `${activePrintArea.width_px}/${activePrintArea.height_px}`
     : "1/1";
 
+  const stageMockupWidth = activeStageObj?.mockup_width || activePrintArea?.width_px || 1000;
+  const stageMockupHeight = activeStageObj?.mockup_height || activePrintArea?.height_px || 1000;
+  const workspacePadding = workspaceSize.width < 640 ? 24 : 56;
+  const availableWidth = Math.max(120, workspaceSize.width - workspacePadding * 2);
+  const availableHeight = Math.max(120, workspaceSize.height - workspacePadding * 2);
+  const fitScale = Math.min(availableWidth / stageMockupWidth, availableHeight / stageMockupHeight);
+  const displayMockupWidth = workspaceSize.width ? Math.max(120, Math.round(stageMockupWidth * fitScale)) : 0;
+  const displayMockupHeight = workspaceSize.height ? Math.max(120, Math.round(stageMockupHeight * fitScale)) : 0;
+
+  const clampZoom = (value: number) => Math.min(3, Math.max(0.5, Math.round(value * 100) / 100));
+  const zoomBy = (delta: number) => setZoom((value) => clampZoom(value + delta));
+  const resetView = () => {
+    setZoom(1);
+    setPan({ x: 0, y: 0 });
+  };
+  const startPan = (event: React.PointerEvent<HTMLDivElement>) => {
+    if ((event.target as HTMLElement).closest("[data-editor-controls]")) return;
+    if (!panMode && !event.altKey && event.button !== 1) return;
+    event.preventDefault();
+    event.stopPropagation();
+    event.currentTarget.setPointerCapture(event.pointerId);
+    panStart.current = { x: event.clientX, y: event.clientY, panX: pan.x, panY: pan.y };
+    setPanning(true);
+  };
+  const movePan = (event: React.PointerEvent<HTMLDivElement>) => {
+    if (!panStart.current) return;
+    event.preventDefault();
+    event.stopPropagation();
+    setPan({
+      x: panStart.current.panX + event.clientX - panStart.current.x,
+      y: panStart.current.panY + event.clientY - panStart.current.y,
+    });
+  };
+  const endPan = (event: React.PointerEvent<HTMLDivElement>) => {
+    if (!panStart.current) return;
+    event.stopPropagation();
+    panStart.current = null;
+    setPanning(false);
+    if (event.currentTarget.hasPointerCapture(event.pointerId)) {
+      event.currentTarget.releasePointerCapture(event.pointerId);
+    }
+  };
+
   const clipartCategories = useMemo(
     () => ["All", ...Array.from(new Set(cliparts.map((item) => item.category)))],
     [cliparts]
@@ -792,97 +916,115 @@ export function DesignEditor({ product, initialDesign, initialTemplate, initialV
 
   const selectedVariant = product.variants.find((variant) => variant.id === variantId);
   const methods = product.printing_methods;
-  const displayTotal = quote?.total || (Number(product.base_price) + Number(selectedVariant?.price_delta || 0)) * quantity;
-
-  // Canvas container sizing - fit within available viewport
-  const canvasContainerStyle = {
-    position: "relative" as const,
-    width: "100%",
-    height: "100%",
-    maxWidth: "100vw",
-    maxHeight: "100vh",
-    display: "flex",
-    alignItems: "center",
-    justifyContent: "center",
-    overflow: "hidden" as const,
-  };
+  const selectedMethodFee = Number(
+    methods.find((link) => link.printing_method.id === methodId)?.printing_method.base_fee || 0
+  );
+  const displayTotal =
+    quote?.total || (Number(product.base_price) + Number(selectedVariant?.price_delta || 0) + selectedMethodFee) * quantity;
+  const toolLabel = TOOL_ITEMS.find((item) => item.id === tool)?.label || "Tools";
+  const exportTypes = isAdmin ? (["png", "svg", "pdf"] as const) : (["png"] as const);
 
   return (
-    <div className="fixed inset-0 z-0 bg-cream text-ink selection:bg-d95d39 selection:text-fbf7ef">
-      {/* Top Toolbar */}
-      <div className="fixed top-0 left-0 right-0 h-14 z-50 bg-cream/95 backdrop-blur-sm border-b border-ink/10 flex items-center justify-between px-6">
-        <div className="flex items-center gap-3">
-          <Link href={`/products/${product.slug}`} className="flex h-10 w-10 items-center justify-center rounded-lg border border-ink/15 hover:bg-ink/5" aria-label="Back to product">
+    <div className="fixed inset-0 z-0 flex flex-col bg-cream text-ink selection:bg-clay selection:text-cream">
+      <header className="relative z-50 flex h-14 shrink-0 items-center justify-between gap-3 border-b border-ink/10 bg-cream/95 px-3 backdrop-blur-sm sm:px-5">
+        <div className="flex min-w-0 items-center gap-2 sm:gap-3">
+          <Link
+            href={`/products/${product.slug}`}
+            className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border border-ink/15 hover:bg-ink/5"
+            aria-label="Back to product"
+          >
             <ArrowLeft size={16} />
           </Link>
-          <div className="flex flex-col items-start gap-0.5">
-            <p className="font-mono text-[10px] uppercase tracking-[0.2em] text-clay">Studio · {product.name}</p>
+          <div className="flex min-w-0 flex-col items-start gap-0.5">
+            <p className="hidden font-mono text-[10px] uppercase tracking-[0.2em] text-clay sm:block">
+              Studio · {product.name}
+            </p>
             <input
               value={name}
               onChange={(event) => {
                 setName(event.target.value);
                 setDirty(true);
               }}
-              className="w-full max-w-xs border-none bg-transparent font-display text-xl font-bold outline-none focus:ring-0"
+              className="w-32 truncate border-none bg-transparent font-display text-base font-bold outline-none focus:ring-0 sm:w-48 sm:text-xl md:w-64"
               aria-label="Design name"
             />
           </div>
         </div>
 
-        <div className="flex items-center gap-2">
-          <Button
-            variant={showMockupPreview ? "clay" : "outline"}
-            size="sm"
-            onClick={() => setShowMockupPreview((prev) => !prev)}
-            title="Mockup Preview"
+        <div className="flex shrink-0 items-center gap-1.5 sm:gap-2">
+          <div className="hidden items-center gap-1.5 lg:flex">
+            <span className="font-mono text-[10px] uppercase tracking-wider text-clay">
+              {activeStageObj?.name || "Front"}
+            </span>
+            {product.stages.length > 1 && (
+              <button
+                onClick={() => {
+                  const stages = product.stages;
+                  const currentIndex = stages.findIndex((stage) => stage.id === activeStageId);
+                  const nextIndex = (currentIndex + 1) % stages.length;
+                  loadStage(stages[nextIndex].id);
+                }}
+                className="flex h-8 w-8 items-center justify-center rounded-full border border-ink/15 hover:bg-ink/5"
+                title="Next view"
+                aria-label="Next view"
+              >
+                <ChevronRight size={14} />
+              </button>
+            )}
+          </div>
+
+          <div className="hidden h-6 w-px bg-ink/10 md:block" />
+
+          <button
+            onClick={undo}
+            disabled={!canUndo}
+            className="hidden h-9 w-9 items-center justify-center rounded-lg border border-ink/15 bg-white hover:bg-ink/5 disabled:cursor-not-allowed disabled:opacity-40 md:flex"
+            title="Undo"
+            aria-label="Undo"
           >
-            <Maximize size={16} />
-          </Button>
-        </div>
-
-        <div className="flex items-center gap-3">
-          <div className="flex items-center gap-2">
-            <span className="text-[10px] font-mono uppercase tracking-wider text-clay">{activeStageObj?.name || "Front"}</span>
-            <button
-              onClick={() => {
-                const stages = product.stages;
-                const currentIndex = stages.findIndex((s) => s.id === activeStageId);
-                const nextIndex = (currentIndex + 1) % stages.length;
-                loadStage(stages[nextIndex].id);
-              }}
-              className="flex h-8 w-8 items-center justify-center rounded-full border border-ink/15 hover:bg-ink/5"
-              title="Next view"
-            >
-              <ChevronRight size={14} />
-            </button>
-          </div>
-
-          <div className="h-6 w-px border-ink/20" />
-
-          <div className="flex items-center gap-1">
-            <span className="text-[10px] font-mono uppercase tracking-wider text-clay">Ready to print</span>
-            <span className="flex h-2 w-2 rounded-full bg-emerald-500" />
-          </div>
-
-          <div className="h-6 w-px border-ink/20" />
+            <Undo2 size={15} />
+          </button>
+          <button
+            onClick={redo}
+            disabled={!canRedo}
+            className="hidden h-9 w-9 items-center justify-center rounded-lg border border-ink/15 bg-white hover:bg-ink/5 disabled:cursor-not-allowed disabled:opacity-40 md:flex"
+            title="Redo"
+            aria-label="Redo"
+          >
+            <Redo2 size={15} />
+          </button>
+          <button
+            onClick={() => setShowMockupPreview((prev) => !prev)}
+            className={cn(
+              "hidden h-9 w-9 items-center justify-center rounded-lg border lg:flex",
+              showMockupPreview ? "border-clay bg-clay text-white" : "border-ink/15 bg-white hover:bg-ink/5"
+            )}
+            title={showMockupPreview ? "Exit mockup preview" : "Mockup preview"}
+            aria-label={showMockupPreview ? "Exit mockup preview" : "Mockup preview"}
+          >
+            {showMockupPreview ? <Minimize size={15} /> : <Maximize size={15} />}
+          </button>
 
           <button
             onClick={() => router.push("/cart")}
-            className="flex h-10 w-10 items-center justify-center rounded-lg border border-ink/15 bg-white hover:bg-ink/10"
+            className="relative flex h-9 w-9 items-center justify-center rounded-lg border border-ink/15 bg-white hover:bg-ink/10"
             aria-label="View cart"
           >
             <ShoppingBag size={16} />
-            <span className="absolute -top-1 -right-1 flex h-4 w-4 items-center justify-center rounded-full bg-clay text-cream text-[10px] font-bold">
-              {cartCount > 0 ? cartCount : ""}
-            </span>
+            {cartCount > 0 && (
+              <span className="absolute -right-1 -top-1 flex h-4 min-w-4 items-center justify-center rounded-full bg-clay px-1 text-[10px] font-bold text-cream">
+                {cartCount}
+              </span>
+            )}
           </button>
 
-          <span className="text-sm font-mono font-bold text-clay">${money(displayTotal)}</span>
+          <span className="hidden font-mono text-sm font-bold text-clay sm:inline">{money(displayTotal)}</span>
 
-          <div className="flex items-center gap-1">
+          <div className="hidden items-center gap-1 md:flex">
             <button
-              onClick={() => setQuantity((v) => Math.max(1, v - 1))}
+              onClick={() => setQuantity((value) => Math.max(1, value - 1))}
               className="flex h-8 w-8 items-center justify-center rounded-full border border-ink/15 hover:bg-ink/5"
+              aria-label="Decrease quantity"
             >
               <Minus size={13} />
             </button>
@@ -892,34 +1034,85 @@ export function DesignEditor({ product, initialDesign, initialTemplate, initialV
               max={1000}
               value={quantity}
               onChange={(event) => setQuantity(Math.max(1, Math.min(1000, Number(event.target.value) || 1)))}
-              className="w-10 h-8 border border-ink/15 rounded-lg text-center text-xs outline-none focus:ring-2 focus:ring-clay/20"
+              className="h-8 w-10 rounded-lg border border-ink/15 text-center text-xs outline-none focus:ring-2 focus:ring-clay/20"
+              aria-label="Quantity"
             />
             <button
-              onClick={() => setQuantity((v) => Math.min(1000, v + 1))}
+              onClick={() => setQuantity((value) => Math.min(1000, value + 1))}
               className="flex h-8 w-8 items-center justify-center rounded-full border border-ink/15 hover:bg-ink/5"
+              aria-label="Increase quantity"
             >
               <Plus size={13} />
             </button>
           </div>
 
-          <Button size="sm" onClick={handleAddToCart} loading={adding}>
-            <ShoppingBag size={16} /> Add to cart
+          <Button size="sm" onClick={handleAddToCart} loading={adding} disabled={!ready} aria-label="Add to cart" className="px-3 sm:px-3.5">
+            <ShoppingBag size={16} /> <span className="hidden sm:inline">Add to cart</span>
           </Button>
         </div>
-      </div>
+      </header>
 
-      {/* Main Workspace */}
-      <div className="flex h-[calc(100dvh-3.5rem)]">
+      {(error || notice) && (
+        <div className="fixed left-1/2 top-16 z-[90] w-[calc(100%-2rem)] max-w-lg -translate-x-1/2">
+          <div
+            className={cn(
+              "flex items-start gap-3 rounded-xl border px-4 py-3 text-sm shadow-lg",
+              error ? "border-rose-200 bg-rose-50 text-rose-900" : "border-olive/20 bg-olive-soft text-olive"
+            )}
+            role={error ? "alert" : "status"}
+          >
+            <span className="flex-1">{error || notice}</span>
+            <button
+              onClick={() => {
+                setError("");
+                setNotice("");
+              }}
+              className="shrink-0 rounded p-0.5 hover:bg-black/5"
+              aria-label="Dismiss message"
+            >
+              <X size={16} />
+            </button>
+          </div>
+        </div>
+      )}
+
+      <div className="flex min-h-0 flex-1">
+        {panelOpen && (
+          <div
+            className="fixed inset-0 z-40 bg-ink/40 xl:hidden"
+            onClick={() => setPanelOpen(false)}
+            aria-hidden="true"
+          />
+        )}
+
         {/* Left Tool Panel */}
-        <aside className="hidden lg:flex h-full w-64 border-r border-ink/10 bg-white flex flex-col z-40">
-          <div className="grid grid-cols-5 border-b border-ink/10">
+        <aside
+          className={cn(
+            "w-64 shrink-0 flex-col border-r border-ink/10 bg-white xl:static xl:z-30 xl:flex xl:h-full",
+            panelOpen
+              ? "fixed bottom-14 left-0 top-14 z-[70] flex max-w-[85vw] shadow-2xl"
+              : "hidden"
+          )}
+        >
+          <div className="flex items-center justify-between border-b border-ink/10 px-4 py-3 xl:hidden">
+            <div>
+              <p className="font-mono text-[10px] uppercase tracking-[0.2em] text-clay">Studio tools</p>
+              <p className="font-display text-lg font-bold">{toolLabel}</p>
+            </div>
+            <button
+              onClick={() => setPanelOpen(false)}
+              className="flex h-9 w-9 items-center justify-center rounded-full border border-ink/15 hover:bg-ink/5"
+              aria-label="Close tools"
+            >
+              <X size={16} />
+            </button>
+          </div>
+
+          <div className="grid grid-cols-4 border-b border-ink/10">
             {TOOL_ITEMS.map((item) => (
               <button
                 key={item.id}
-                onClick={() => {
-                  setTool(item.id);
-                  setPanelOpen(true);
-                }}
+                onClick={() => selectTool(item.id)}
                 className={cn(
                   "flex flex-col items-center gap-1 py-3 text-[10px] font-semibold transition",
                   tool === item.id ? "bg-ink text-cream" : "text-muted hover:bg-ink/5 hover:text-ink"
@@ -942,8 +1135,14 @@ export function DesignEditor({ product, initialDesign, initialTemplate, initialV
                 </div>
                 <div className="mt-4">
                   <label className="label">Colour / Size</label>
-                  <div className="grid grid-cols-2 gap-3">
-                    <select value={variantId} onChange={(event) => setVariantId(event.target.value)} className="field">
+                  <div className="grid grid-cols-1 gap-2">
+                    <select
+                      value={variantId}
+                      onChange={(event) => setVariantId(event.target.value)}
+                      className="field"
+                      disabled={!product.variants.some((variant) => variant.is_active)}
+                      aria-label="Colour and size"
+                    >
                       {product.variants.filter((variant) => variant.is_active).map((variant) => (
                         <option key={variant.id} value={variant.id}>
                           {[variant.color_name, variant.size].filter(Boolean).join(" / ") || variant.name}
@@ -951,7 +1150,13 @@ export function DesignEditor({ product, initialDesign, initialTemplate, initialV
                         </option>
                       ))}
                     </select>
-                    <select value={methodId} onChange={(event) => setMethodId(event.target.value)} className="field">
+                    <select
+                      value={methodId}
+                      onChange={(event) => setMethodId(event.target.value)}
+                      className="field"
+                      disabled={!methods.length}
+                      aria-label="Print method"
+                    >
                       {methods.map((link) => (
                         <option key={link.id} value={link.printing_method.id}>
                           {link.printing_method.name}
@@ -960,6 +1165,10 @@ export function DesignEditor({ product, initialDesign, initialTemplate, initialV
                       ))}
                     </select>
                   </div>
+                  {!product.variants.some((variant) => variant.is_active) && (
+                    <p className="mt-2 text-[11px] text-rose-700">This product has no variants available right now.</p>
+                  )}
+                  {!methods.length && <p className="mt-2 text-[11px] text-rose-700">No printing methods are configured for this product.</p>}
                 </div>
                 <div className="mt-4">
                   <label className="label">Quantity</label>
@@ -1112,8 +1321,12 @@ export function DesignEditor({ product, initialDesign, initialTemplate, initialV
               </div>
             )}
 
-            {tool === "clipart" && (
+            {(tool === "images" || tool === "clipart") && (
               <div className="space-y-3">
+                <div>
+                  <label className="label">Clipart library</label>
+                  <p className="text-[11px] text-muted">Click any image to add it to the current print area.</p>
+                </div>
                 <div className="flex flex-wrap gap-1.5">
                   {clipartCategories.map((category) => (
                     <button
@@ -1129,7 +1342,7 @@ export function DesignEditor({ product, initialDesign, initialTemplate, initialV
                   {visibleCliparts.map((item) => (
                     <button
                       key={item.id}
-                      onClick={() => addImage(item.image_url, 600, 600, item.name)}
+                      onClick={() => addImage(item.image_url, 600, 600, item.name, "clipart")}
                       className="group aspect-square overflow-hidden rounded-lg border border-ink/10 bg-white p-1.5 hover:border-clay"
                       title={item.name}
                     >
@@ -1243,11 +1456,34 @@ export function DesignEditor({ product, initialDesign, initialTemplate, initialV
             {isTextSelected && (
               <p className="mt-2 text-[10px] text-muted">Text selected — style controls are in the Text tab.</p>
             )}
+            <div className="mt-4 space-y-2 border-t border-ink/10 pt-3 xl:hidden">
+              <Button variant="outline" size="sm" className="w-full" onClick={() => save(false)} loading={saving} disabled={!ready}>
+                <Save size={14} /> Save design
+              </Button>
+              <div className={cn("grid gap-1.5", isAdmin ? "grid-cols-3" : "grid-cols-1")}>
+                {exportTypes.map((fileType) => (
+                  <Button
+                    key={fileType}
+                    variant="outline"
+                    size="sm"
+                    className="px-2"
+                    onClick={() => handleDownload(fileType)}
+                    disabled={downloading || !ready}
+                    aria-label={`Export ${fileType.toUpperCase()}`}
+                  >
+                    {fileType.toUpperCase()}
+                  </Button>
+                ))}
+              </div>
+              {!isAdmin && (
+                <p className="text-[10px] text-muted">PNG proof available now. Production SVG/PDF files are prepared with your order.</p>
+              )}
+            </div>
           </div>
         </aside>
 
         {/* Main Canvas Workspace */}
-        <section className="absolute top-[56px] left-0 right-0 bottom-0 bg-sand flex flex-col pb-0">
+        <section className="relative flex min-h-0 min-w-0 flex-1 flex-col bg-sand">
           <div className="flex items-center justify-between gap-2 px-4 py-2 bg-sand border-b border-ink/10">
             <div className="flex flex-wrap gap-1.5">
               {product.stages.map((stage) => (
@@ -1268,19 +1504,105 @@ export function DesignEditor({ product, initialDesign, initialTemplate, initialV
             </span>
           </div>
 
-          <div className="flex-1 relative bg-sand flex items-center justify-center overflow-hidden">
-            <div
-              className="absolute inset-0 h-full w-full bg-[repeating-conic-gradient(#efe7d9_0_25%,#f7f1e7_0_50%)] bg-[length:24px_24px]"
-            />
-            <div
-              className="absolute z-10"
-              style={stageBox}
-            >
-              <div className="editor-canvas h-full w-full">
-                <canvas ref={canvasElRef} />
+          <div
+            ref={workspaceRef}
+            className={cn(
+              "relative flex min-h-0 flex-1 items-center justify-center overflow-hidden bg-sand",
+              panMode ? "cursor-grab" : "",
+              panning ? "cursor-grabbing" : ""
+            )}
+            onPointerDownCapture={startPan}
+            onPointerMoveCapture={movePan}
+            onPointerUpCapture={endPan}
+            onPointerCancelCapture={endPan}
+          >
+            <div className="pointer-events-none absolute inset-0 h-full w-full bg-[repeating-conic-gradient(#efe7d9_0_25%,#f7f1e7_0_50%)] bg-[length:24px_24px]" />
+
+            <div className="absolute inset-0 flex items-center justify-center p-3 sm:p-6">
+              <div
+                className="relative shrink-0 will-change-transform"
+                style={{
+                  width: displayMockupWidth || "80%",
+                  height: displayMockupHeight || undefined,
+                  aspectRatio: displayMockupWidth ? undefined : mockupRatio,
+                  transform: `translate3d(${pan.x}px, ${pan.y}px, 0) scale(${zoom})`,
+                  transformOrigin: "center center",
+                }}
+              >
+                {mockupUrl ? (
+                  <img
+                    src={mediaUrl(mockupUrl)}
+                    alt={`${product.name} ${activeStageObj?.name || ""} mockup`.trim()}
+                    data-testid="stage-mockup"
+                    className="pointer-events-none absolute inset-0 h-full w-full select-none object-contain drop-shadow-xl"
+                    draggable={false}
+                  />
+                ) : (
+                  <div className="absolute inset-0 flex items-center justify-center rounded-2xl border border-dashed border-ink/20 bg-white/45 text-xs text-muted">
+                    No mockup image for this stage
+                  </div>
+                )}
+
+                <div className="absolute z-10" style={stageBox}>
+                  <div className={cn("editor-canvas h-full w-full", (showMockupPreview || panMode) && "pointer-events-none")}>
+                    <canvas ref={canvasElRef} />
+                  </div>
+                  {!showMockupPreview && (
+                    <div
+                      data-testid="print-boundary"
+                      className="pointer-events-none absolute inset-0 z-20 border border-dashed border-clay/70"
+                    />
+                  )}
+                </div>
               </div>
-              <div className="absolute inset-0 z-20 border border-dashed border-clay/50 pointer-events-none" style={stageBox} />
             </div>
+
+            {showMockupPreview && (
+              <div className="pointer-events-none absolute left-4 top-4 z-30 rounded-full bg-ink/85 px-3 py-1.5 font-mono text-[10px] uppercase tracking-wider text-cream">
+                Mockup preview
+              </div>
+            )}
+
+            <div data-editor-controls className="absolute bottom-3 right-3 z-30 flex items-center gap-1 rounded-full border border-ink/15 bg-white/95 p-1 shadow-lg sm:bottom-4 sm:right-4">
+              <button
+                onClick={() => zoomBy(-0.15)}
+                className="flex h-8 w-8 items-center justify-center rounded-full hover:bg-ink/5"
+                aria-label="Zoom out"
+                title="Zoom out"
+              >
+                <ZoomOut size={15} />
+              </button>
+              <button
+                onClick={resetView}
+                className="min-w-12 rounded-full px-1 font-mono text-[10px] font-semibold text-muted hover:bg-ink/5"
+                aria-label="Reset zoom and pan"
+                title="Reset view"
+              >
+                {Math.round(zoom * 100)}%
+              </button>
+              <button
+                onClick={() => zoomBy(0.15)}
+                className="flex h-8 w-8 items-center justify-center rounded-full hover:bg-ink/5"
+                aria-label="Zoom in"
+                title="Zoom in"
+              >
+                <ZoomIn size={15} />
+              </button>
+              <div className="h-5 w-px bg-ink/10" />
+              <button
+                onClick={() => setPanMode((value) => !value)}
+                className={cn(
+                  "flex h-8 w-8 items-center justify-center rounded-full",
+                  panMode ? "bg-ink text-cream" : "hover:bg-ink/5"
+                )}
+                aria-label="Pan mode"
+                aria-pressed={panMode}
+                title="Pan mode"
+              >
+                <Move size={15} />
+              </button>
+            </div>
+
             {!ready && (
               <div className="absolute inset-0 z-30 flex items-center justify-center bg-cream/70 backdrop-blur-sm">
                 <div className="flex flex-col items-center gap-2 text-xs text-muted">
@@ -1290,19 +1612,23 @@ export function DesignEditor({ product, initialDesign, initialTemplate, initialV
             )}
           </div>
 
-          <div className="mt-3 flex flex-wrap items-center justify-between gap-2 text-[11px] text-muted px-4">
-            <span>Drag to move · corners to scale · double-click text to edit</span>
-            <span>{activePrintArea ? `${activePrintArea.export_width_px} × ${activePrintArea.export_height_px}px @ ${activePrintArea.export_dpi} DPI` : ""}</span>
+          <div className="flex flex-wrap items-center justify-between gap-2 px-4 py-2 text-[11px] text-muted">
+            <span>Drag to move · corners to scale · double-click text to edit · Alt-drag to pan</span>
+            <span className="hidden sm:inline">
+              {activePrintArea ? `${activePrintArea.export_width_px} × ${activePrintArea.export_height_px}px @ ${activePrintArea.export_dpi} DPI` : ""}
+            </span>
           </div>
 
-          <div className="mt-3 flex flex-wrap items-center justify-between gap-2 rounded-2xl bg-olive-soft px-4 py-3 text-xs text-olive">
-            <span className="flex items-center gap-2"><Sparkles size={14} /> Every stage exports as a production-ready file.</span>
-            <span className="font-semibold">{dirty ? "Remember to save" : "All changes saved"}</span>
+          <div className="mx-3 mb-2 flex flex-wrap items-center justify-between gap-2 rounded-xl bg-olive-soft px-3 py-2 text-[11px] text-olive sm:mx-4">
+            <span className="hidden items-center gap-2 sm:flex">
+              <Sparkles size={14} /> Every stage exports as a production-ready file.
+            </span>
+            <span className="font-semibold">{saving ? "Saving…" : dirty ? "Unsaved changes" : "All changes saved"}</span>
           </div>
         </section>
 
         {/* Right Configuration Panel (Desktop) */}
-        <aside className="hidden lg:flex h-full w-80 border-l border-ink/10 bg-white flex flex-col z-40">
+        <aside className="hidden h-full w-80 shrink-0 flex-col border-l border-ink/10 bg-white xl:flex">
           <div className="p-5 flex-1 overflow-y-auto">
             <p className="eyebrow">Your configuration</p>
             <h2 className="mt-1 font-display text-2xl">{product.name}</h2>
@@ -1314,6 +1640,8 @@ export function DesignEditor({ product, initialDesign, initialTemplate, initialV
                   value={variantId}
                   onChange={(event) => setVariantId(event.target.value)}
                   className="field"
+                  disabled={!product.variants.some((variant) => variant.is_active)}
+                  aria-label="Colour and size"
                 >
                   {product.variants.filter((variant) => variant.is_active).map((variant) => (
                     <option key={variant.id} value={variant.id}>
@@ -1324,10 +1652,15 @@ export function DesignEditor({ product, initialDesign, initialTemplate, initialV
                 </select>
               </label>
 
-              {methods.length > 0 && (
+              {methods.length > 0 ? (
                 <label className="block">
                   <span className="label">Print method</span>
-                  <select value={methodId} onChange={(event) => setMethodId(event.target.value)} className="field">
+                  <select
+                    value={methodId}
+                    onChange={(event) => setMethodId(event.target.value)}
+                    className="field"
+                    aria-label="Print method"
+                  >
                     {methods.map((link) => (
                       <option key={link.id} value={link.printing_method.id}>
                         {link.printing_method.name}
@@ -1336,6 +1669,10 @@ export function DesignEditor({ product, initialDesign, initialTemplate, initialV
                     ))}
                   </select>
                 </label>
+              ) : (
+                <p className="rounded-lg bg-amber-50 px-3 py-2 text-[11px] text-amber-800">
+                  No printing methods are configured for this product.
+                </p>
               )}
 
               <div>
@@ -1387,14 +1724,49 @@ export function DesignEditor({ product, initialDesign, initialTemplate, initialV
               )}
             </div>
 
-            <Button className="mt-4 w-full" size="lg" onClick={handleAddToCart} loading={adding}>
+            <Button className="mt-4 w-full" size="lg" onClick={handleAddToCart} loading={adding} disabled={!ready}>
               <ShoppingBag size={16} /> Add to cart <ArrowRight size={15} />
             </Button>
             <p className="mt-2 text-center text-[10px] text-muted">
               {user ? "Your design is saved with this order." : "Sign in to save and order your design."}
             </p>
 
-            <div className="rounded-2xl bg-sand/70 p-4 text-xs leading-relaxed text-muted">
+            <div className="mt-4 rounded-xl border border-ink/10 p-3">
+              <div className="flex items-center justify-between">
+                <span className="label mb-0">Production files</span>
+                <span className="text-[10px] text-muted">{isAdmin ? "300 DPI" : "150 DPI proof"}</span>
+              </div>
+              <div className={cn("mt-2 grid gap-1.5", isAdmin ? "grid-cols-3" : "grid-cols-1")}>
+                {exportTypes.map((fileType) => (
+                  <Button
+                    key={fileType}
+                    variant="outline"
+                    size="sm"
+                    className="px-2"
+                    onClick={() => handleDownload(fileType)}
+                    disabled={downloading || !ready}
+                    aria-label={`Export ${fileType.toUpperCase()}`}
+                  >
+                    {fileType.toUpperCase()}
+                  </Button>
+                ))}
+              </div>
+              {!isAdmin && (
+                <p className="mt-2 text-[10px] text-muted">PNG proof available now. Production SVG/PDF files are prepared with your order.</p>
+              )}
+              <Button
+                variant="outline"
+                size="sm"
+                className="mt-2 w-full"
+                onClick={() => save(false)}
+                loading={saving}
+                disabled={!ready}
+              >
+                <Save size={14} /> Save design
+              </Button>
+            </div>
+
+            <div className="mt-4 rounded-2xl bg-sand/70 p-4 text-xs leading-relaxed text-muted">
               <p className="font-semibold text-ink">Designer tips</p>
               <ul className="mt-2 space-y-1">
                 <li>• Keep text inside the dashed print boundary.</li>
@@ -1408,41 +1780,53 @@ export function DesignEditor({ product, initialDesign, initialTemplate, initialV
       </div>
 
       {/* Bottom Toolbar (Mobile) */}
-      <div className="lg:hidden fixed bottom-0 left-0 right-0 h-14 z-50 bg-cream border-t border-ink/10 flex items-center justify-between px-4">
-        <div className="flex items-center gap-2">
-          <button onClick={() => setTool("products")} className={cn("flex h-10 w-10 items-center justify-center rounded-full", tool === "products" ? "bg-ink text-cream" : "bg-white text-muted hover:bg-ink/5")}>
-            <Layout size={16} />
-          </button>
-          <button onClick={() => setTool("templates")} className={cn("flex h-10 w-10 items-center justify-center rounded-full", tool === "templates" ? "bg-ink text-cream" : "bg-white text-muted hover:bg-ink/5")}>
-            <Shapes size={16} />
-          </button>
-          <button onClick={() => setTool("text")} className={cn("flex h-10 w-10 items-center justify-center rounded-full", tool === "text" ? "bg-ink text-cream" : "bg-white text-muted hover:bg-ink/5")}>
-            <Type size={16} />
-          </button>
-          <button onClick={() => setTool("elements")} className={cn("flex h-10 w-10 items-center justify-center rounded-full", tool === "elements" ? "bg-ink text-cream" : "bg-white text-muted hover:bg-ink/5")}>
-            <Grid size={16} />
-          </button>
-          <button onClick={() => setTool("images")} className={cn("flex h-10 w-10 items-center justify-center rounded-full", tool === "images" ? "bg-ink text-cream" : "bg-white text-muted hover:bg-ink/5")}>
-            <ImageIcon size={16} />
-          </button>
-          <button onClick={() => setTool("upload")} className={cn("flex h-10 w-10 items-center justify-center rounded-full", tool === "upload" ? "bg-ink text-cream" : "bg-white text-muted hover:bg-ink/5")}>
-            <UploadCloud size={16} />
-          </button>
-          <button onClick={() => setTool("layers")} className={cn("flex h-10 w-10 items-center justify-center rounded-full", tool === "layers" ? "bg-ink text-cream" : "bg-white text-muted hover:bg-ink/5")}>
-            <Layers size={16} />
-          </button>
+      <div className="flex h-14 shrink-0 items-center justify-between gap-2 border-t border-ink/10 bg-cream px-2 xl:hidden">
+        <div className="flex min-w-0 flex-1 items-center gap-1.5 overflow-x-auto py-1">
+          {TOOL_ITEMS.map((item) => (
+            <button
+              key={item.id}
+              onClick={() => selectTool(item.id)}
+              className={cn(
+                "flex h-9 w-9 shrink-0 items-center justify-center rounded-full",
+                tool === item.id ? "bg-ink text-cream" : "bg-white text-muted hover:bg-ink/5"
+              )}
+              aria-label={item.label}
+              title={item.label}
+            >
+              <item.icon size={16} />
+            </button>
+          ))}
         </div>
-        <div className="flex items-center gap-2">
-          <button onClick={undo} className={cn("flex h-10 w-10 items-center justify-center rounded-full", !canUndo ? "bg-white text-muted" : "bg-ink text-cream")} disabled={!canUndo}>
+        <div className="flex shrink-0 items-center gap-1.5">
+          <button
+            onClick={undo}
+            className={cn("flex h-9 w-9 items-center justify-center rounded-full", !canUndo ? "bg-white text-muted" : "bg-ink text-cream")}
+            disabled={!canUndo}
+            aria-label="Undo"
+          >
             <Undo2 size={16} />
           </button>
-          <button onClick={redo} className={cn("flex h-10 w-10 items-center justify-center rounded-full", !canRedo ? "bg-white text-muted" : "bg-ink text-cream")} disabled={!canRedo}>
+          <button
+            onClick={redo}
+            className={cn("flex h-9 w-9 items-center justify-center rounded-full", !canRedo ? "bg-white text-muted" : "bg-ink text-cream")}
+            disabled={!canRedo}
+            aria-label="Redo"
+          >
             <Redo2 size={16} />
           </button>
-          <button onClick={() => setShowMockupPreview((prev) => !prev)} className={cn("flex h-10 w-10 items-center justify-center rounded-full", showMockupPreview ? "bg-ink text-cream" : "bg-white text-muted hover:bg-ink/5")}>
-            <Maximize size={16} />
+          <button
+            onClick={() => setShowMockupPreview((prev) => !prev)}
+            className={cn("flex h-9 w-9 items-center justify-center rounded-full", showMockupPreview ? "bg-ink text-cream" : "bg-white text-muted hover:bg-ink/5")}
+            aria-label={showMockupPreview ? "Exit mockup preview" : "Mockup preview"}
+          >
+            {showMockupPreview ? <Minimize size={16} /> : <Maximize size={16} />}
           </button>
-          <button onClick={handleAddToCart} className="flex h-10 w-10 items-center justify-center rounded-full bg-ink text-cream" disabled={adding}>
+          <button
+            onClick={handleAddToCart}
+            className="flex h-9 w-9 items-center justify-center rounded-full bg-ink text-cream"
+            disabled={adding || !ready}
+            aria-label="Add to cart"
+          >
             <ShoppingBag size={16} />
           </button>
         </div>

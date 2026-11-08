@@ -1,6 +1,6 @@
 # Printora Test Report
 
-Date: 2026-11-07
+Date: 2026-11-08
 
 ## Backend tests
 
@@ -29,7 +29,7 @@ Result: TypeScript passes; production build succeeds (20 routes).
 
 Command: `cd frontend && npx playwright test`
 
-Result: **10 passed, 2 skipped** (admin dashboard test skipped because `E2E_ADMIN_EMAIL`/`E2E_ADMIN_PASSWORD` not set).
+Result: **15 passed, 2 skipped** (admin dashboard test skipped because `E2E_ADMIN_EMAIL`/`E2E_ADMIN_PASSWORD` not set).
 
 ### E2E test coverage
 
@@ -53,6 +53,13 @@ Result: **10 passed, 2 skipped** (admin dashboard test skipped because `E2E_ADMI
 
 **Full workflow (design editor):**
 - Text, shapes, layers, undo/redo, save/reload, exports (PNG/SVG/PDF)
+
+**Product showcase slider:**
+- Initial showcase renders slider, category tabs and vertical navigation
+- Switching product categories updates the preview, mockup and right-side content
+- Vertical slide navigation updates the right-side content
+- CTA buttons navigate to valid Printora pages
+- Mobile layout stacks content and keeps the slider usable
 
 ## Dependency audit
 

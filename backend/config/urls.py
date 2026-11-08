@@ -10,6 +10,7 @@ urlpatterns = [
     path("api/", include("designer.urls")),
     path("api/", include("commerce.urls")),
     path("api/", include("production.urls")),
+    path("api/assistant/", include("assistant.urls")),
 ]
 
 def serve_media(request, path):

@@ -13,11 +13,12 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 
 from accounts.models import User
+from assistant.throttles import NewsletterThrottle
 from catalog.models import PrintingMethod, Product, ProductVariant
 from core.permissions import IsAdminRole
 from designer.models import Design
 from designer.serializers import DesignListSerializer
-from .models import Cart, CartItem, Order, StoreConfiguration, WebhookEvent
+from .models import Cart, CartItem, NewsletterSubscriber, Order, StoreConfiguration, WebhookEvent
 from .pricing import money
 from .serializers import (
     AdminOrderUpdateSerializer,
@@ -25,6 +26,7 @@ from .serializers import (
     CartSerializer,
     CheckoutSerializer,
     CheckoutSessionSerializer,
+    NewsletterSubscribeSerializer,
     OrderListSerializer,
     OrderSerializer,
     StoreConfigSerializer,
@@ -520,3 +522,41 @@ class AdminWebhookEventListView(generics.ListAPIView):
     permission_classes = [IsAdminRole]
     serializer_class = WebhookEventSerializer
     queryset = WebhookEvent.objects.all()
+
+
+class NewsletterSubscribeView(APIView):
+    permission_classes = [AllowAny]
+    throttle_classes = [NewsletterThrottle]
+
+    def post(self, request):
+        serializer = NewsletterSubscribeSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        email = serializer.validated_data["email"]
+        source = serializer.validated_data.get("source") or "footer"
+        subscriber, created = NewsletterSubscriber.objects.get_or_create(
+            email=email,
+            defaults={"source": source, "is_active": True},
+        )
+        if not created:
+            changed = []
+            if not subscriber.is_active:
+                subscriber.is_active = True
+                changed.append("is_active")
+            if source and subscriber.source != source:
+                subscriber.source = source
+                changed.append("source")
+            if changed:
+                changed.append("updated_at")
+                subscriber.save(update_fields=changed)
+        return Response(
+            {
+                "subscribed": True,
+                "already_subscribed": not created,
+                "detail": (
+                    "You're on the list. Watch your inbox for studio drops and offers."
+                    if created
+                    else "You're already subscribed - thanks for being here."
+                ),
+            },
+            status=status.HTTP_201_CREATED if created else status.HTTP_200_OK,
+        )

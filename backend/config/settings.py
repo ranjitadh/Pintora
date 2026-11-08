@@ -32,6 +32,7 @@ INSTALLED_APPS = [
     "designer",
     "commerce",
     "production",
+    "assistant",
 ]
 
 MIDDLEWARE = [
@@ -120,6 +121,10 @@ REST_FRAMEWORK = {
         "user": os.getenv("THROTTLE_USER", "600/min"),
         "auth": os.getenv("THROTTLE_AUTH", "20/min"),
         "upload": os.getenv("THROTTLE_UPLOAD", "60/hour"),
+        "assistant": os.getenv("THROTTLE_ASSISTANT", "20/min"),
+        "assistant_anon": os.getenv("THROTTLE_ASSISTANT_ANON", "10/min"),
+        "assistant_user": os.getenv("THROTTLE_ASSISTANT_USER", "30/min"),
+        "newsletter": os.getenv("THROTTLE_NEWSLETTER", "5/min"),
     },
 }
 
@@ -165,6 +170,18 @@ ALLOWED_IMAGE_HOSTS = [
 CELERY_BROKER_URL = os.getenv("CELERY_BROKER_URL", "redis://localhost:6379/0")
 CELERY_RESULT_BACKEND = os.getenv("CELERY_RESULT_BACKEND", "redis://localhost:6379/1")
 CELERY_TASK_ALWAYS_EAGER = env_bool("CELERY_TASK_ALWAYS_EAGER", True)
+
+# Optional AI provider for the Printora Assistant. When no provider/API key is
+# configured the assistant answers from its grounded FAQ knowledge base.
+# Supported providers: "openai" (any OpenAI-compatible chat endpoint) or
+# "anthropic". Keys are read server-side only and never sent to the browser.
+AI_PROVIDER = os.getenv("AI_PROVIDER", "none").strip().lower()
+AI_API_KEY = os.getenv("AI_API_KEY", "").strip()
+AI_MODEL = os.getenv("AI_MODEL", "").strip()
+AI_BASE_URL = os.getenv("AI_BASE_URL", "").strip()
+AI_TIMEOUT_SECONDS = int(os.getenv("AI_TIMEOUT_SECONDS", "20"))
+AI_MAX_TOKENS = int(os.getenv("AI_MAX_TOKENS", "400"))
+ASSISTANT_SUPPORT_EMAIL = os.getenv("ASSISTANT_SUPPORT_EMAIL", "support@printora.local")
 
 SHOPIFY_API_KEY = os.getenv("SHOPIFY_API_KEY", "")
 SHOPIFY_API_SECRET = os.getenv("SHOPIFY_API_SECRET", "")

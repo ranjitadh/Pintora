@@ -353,3 +353,23 @@ export interface Paginated<T> {
   total_pages: number;
   results: T[];
 }
+
+export interface AssistantAction {
+  label: string;
+  href: string;
+}
+
+export interface AssistantReply {
+  reply: string;
+  mode: "ai" | "faq" | "order";
+  intent: string;
+  authenticated: boolean;
+  action: AssistantAction | null;
+  suggestions: string[];
+}
+
+export interface NewsletterSubscription {
+  subscribed: boolean;
+  already_subscribed: boolean;
+  detail: string;
+}

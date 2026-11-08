@@ -91,6 +91,14 @@ body {
   border-radius: 2px;
 }
 
+.scrollbar-hide {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+.scrollbar-hide::-webkit-scrollbar {
+  display: none;
+}
+
 .editor-grid-bg {
   background-image:
     linear-gradient(to right, rgba(33, 27, 22, 0.07) 1px, transparent 1px),

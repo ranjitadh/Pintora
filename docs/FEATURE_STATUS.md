@@ -1,12 +1,13 @@
 # Feature Status
 
-Last updated: 2026-11-07
+Last updated: 2026-11-08
 
 ## Customer experience
 
 | Feature | Status | Notes |
 | --- | --- | --- |
-| Home page | Complete | Hero, featured products, category entry points. |
+| Home page | Complete | Hero, featured products, category entry points, plus the interactive product showcase slider. |
+| Product showcase slider | Complete | Dark-themed two-column preview with category tabs (T-shirt, Mug, Bag, Phone case, Card), draggable before/after comparison (flat artwork vs. mockup), four dynamic slides, vertical slide navigation, responsive mobile layout, and CTA navigation. |
 | Shop/catalog | Complete | Search, category, sort, pagination. |
 | Product detail | Complete | Gallery, variants, printing methods, stage info, customize CTA. |
 | Template gallery | Complete | Public templates with filters. |
@@ -65,7 +66,7 @@ Last updated: 2026-11-07
 | `.gitignore` | Complete | Python, Node, env, media, test artifacts. |
 | Dockerfiles + Compose | Complete (untested locally) | Compose could not be run because the Docker daemon is unavailable on the development machine. |
 | README/docs set | Complete | Plan, architecture, API, schema, development, deployment. |
-| Playwright E2E | Complete | 10 tests pass covering storefront, auth, studio and admin; 2 skipped (admin dashboard requires E2E_ADMIN_EMAIL/PASSWORD env vars). |
+| Playwright E2E | Complete | 15 tests pass covering storefront, auth, studio, admin and the product showcase slider; 2 skipped (admin dashboard requires E2E_ADMIN_EMAIL/PASSWORD env vars). |
 | CI pipeline | Not included | Suggested: backend tests, frontend typecheck/build, Playwright. |
 
 ## Known limitations / next work

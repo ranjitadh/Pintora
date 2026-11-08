@@ -1,6 +1,6 @@
 from django.contrib import admin
 
-from .models import Cart, CartItem, Order, OrderItem, StoreConfiguration, WebhookEvent
+from .models import Cart, CartItem, NewsletterSubscriber, Order, OrderItem, StoreConfiguration, WebhookEvent
 
 
 class CartItemInline(admin.TabularInline):
@@ -50,3 +50,11 @@ class WebhookEventAdmin(admin.ModelAdmin):
     list_display = ("topic", "external_id", "verified", "processed", "created_at")
     list_filter = ("topic", "verified", "processed")
     search_fields = ("external_id",)
+
+
+@admin.register(NewsletterSubscriber)
+class NewsletterSubscriberAdmin(admin.ModelAdmin):
+    list_display = ("email", "source", "is_active", "created_at")
+    list_filter = ("is_active", "source")
+    search_fields = ("email",)
+    readonly_fields = ("created_at", "updated_at")

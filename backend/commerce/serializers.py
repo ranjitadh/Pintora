@@ -167,6 +167,18 @@ class StoreConfigSerializer(serializers.ModelSerializer):
         return bool(settings.STRIPE_SECRET_KEY and settings.STRIPE_ENABLED)
 
 
+class NewsletterSubscribeSerializer(serializers.Serializer):
+    email = serializers.EmailField()
+    source = serializers.CharField(max_length=40, required=False, allow_blank=True, default="footer")
+
+    def validate_email(self, value):
+        return value.strip().lower()
+
+    def validate_source(self, value):
+        value = (value or "footer").strip().lower()
+        return value[:40] or "footer"
+
+
 class WebhookEventSerializer(serializers.ModelSerializer):
     class Meta:
         model = WebhookEvent

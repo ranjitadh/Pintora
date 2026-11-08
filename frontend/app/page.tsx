@@ -19,6 +19,7 @@ import type { Category, Paginated, ProductListItem, Template } from "@/lib/types
 import { money } from "@/lib/utils";
 import { ProductCard } from "@/components/product-card";
 import { LinkButton } from "@/components/ui";
+import { ProductShowcase } from "@/components/showcase/product-showcase";
 
 export default function HomePage() {
   const [products, setProducts] = useState<ProductListItem[]>([]);
@@ -117,6 +118,8 @@ export default function HomePage() {
           </div>
         </div>
       </section>
+
+      <ProductShowcase />
 
       <div className="overflow-hidden border-y border-ink/10 bg-ink py-3 text-cream">
         <div className="flex flex-wrap items-center justify-center gap-x-8 gap-y-2 px-4 font-mono text-[10px] uppercase tracking-[0.24em] text-cream/70">

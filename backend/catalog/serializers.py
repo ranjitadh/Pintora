@@ -99,8 +99,8 @@ class ProductListSerializer(serializers.ModelSerializer):
     category = ProductCategorySerializer(read_only=True)
     image_url = serializers.SerializerMethodField()
     min_price = serializers.DecimalField(max_digits=10, decimal_places=2, read_only=True)
-    stage_count = serializers.IntegerField(read_only=True, default=0)
-    variant_count = serializers.IntegerField(read_only=True, default=0)
+    stage_count = serializers.SerializerMethodField()
+    variant_count = serializers.SerializerMethodField()
 
     class Meta:
         model = Product
@@ -115,6 +115,12 @@ class ProductListSerializer(serializers.ModelSerializer):
             return None
         request = self.context.get("request")
         return request.build_absolute_uri(obj.image.url) if request else obj.image.url
+
+    def get_stage_count(self, obj):
+        return obj.stages.count()
+
+    def get_variant_count(self, obj):
+        return obj.variants.count()
 
 
 class ProductDetailSerializer(ProductListSerializer):
