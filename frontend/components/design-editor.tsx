@@ -757,6 +757,29 @@ export function DesignEditor({
     pushHistory();
   };
 
+  const makeBigger = () => {
+    const canvas = fabricRef.current;
+    const object = canvas?.getActiveObject();
+    if (!canvas || !object) return;
+    const factor = 1.2;
+    object.scaleX = Number((object.scaleX || 1) * factor);
+    object.scaleY = Number((object.scaleY || 1) * factor);
+    object.setCoords();
+    canvas.requestRenderAll();
+    pushHistory();
+  };
+
+  const rotateSelected = (degrees = 15) => {
+    const canvas = fabricRef.current;
+    const object = canvas?.getActiveObject();
+    if (!canvas || !object) return;
+    const currentAngle = typeof object.getAngle === "function" ? object.getAngle() : (object.angle || 0);
+    object.setAngle(currentAngle + degrees);
+    object.setCoords();
+    canvas.requestRenderAll();
+    pushHistory();
+  };
+
   const undo = () => {
     const state = stageStates.current[activeStageRef.current];
     if (!state || state.undo.length < 2) return;
@@ -1449,8 +1472,10 @@ export function DesignEditor({
               <Button variant="outline" size="sm" onClick={() => addShape("triangle")} title="Triangle"><Triangle size={14} /></Button>
             </div>
             {selected && (
-              <div className="mt-3 flex gap-1.5">
-                <Button variant="danger" size="sm" className="flex-1" onClick={deleteSelected}><Trash2 size={14} /> Delete</Button>
+              <div className="mt-3 grid grid-cols-3 gap-1">
+                <Button variant="outline" size="sm" onClick={makeBigger}><Maximize size={13} /> Bigger</Button>
+                <Button variant="outline" size="sm" onClick={() => rotateSelected(15)}><RotateCcw size={13} /> Rotate</Button>
+                <Button variant="danger" size="sm" onClick={deleteSelected}><Trash2 size={13} /> Delete</Button>
               </div>
             )}
             {isTextSelected && (

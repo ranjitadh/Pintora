@@ -151,8 +151,11 @@ def calculate_price(*, product: Product, quantity: int = 1, variant: ProductVari
     subtotal = money(unit * quantity)
 
     discount_percent = Decimal("0")
-    for discount in sorted(product.quantity_discounts or [], key=lambda d: d.get("min_qty", 0), reverse=True):
+    discounts = product.quantity_discounts if isinstance(product.quantity_discounts, list) else []
+    for discount in sorted(discounts, key=lambda d: d.get("min_qty", 0) if isinstance(d, dict) else 0, reverse=True):
         try:
+            if not isinstance(discount, dict):
+                continue
             if quantity >= int(discount.get("min_qty", 0)):
                 discount_percent = Decimal(str(discount.get("percent", 0)))
                 break
