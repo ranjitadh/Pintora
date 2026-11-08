@@ -25,10 +25,11 @@ Last updated: 2026-11-08
 
 | Feature | Status | Notes |
 | --- | --- | --- |
+| Admin UI framework | Complete | Reusable AdminSidebar (collapsible desktop, mobile drawer, localStorage persistence) and AdminHeader (breadcrumbs, title, description, actions). Section-based navigation. Consistent visual design across all admin pages. |
 | Role-gated admin UI | Complete | `admin`, `staff`, superuser. |
-| Dashboard | Complete | Counts, revenue (quantized to 2 decimals), recent orders/designs, status distribution. |
-| Orders | Complete | Filter/search, status/payment updates, production detail. |
-| Products | Complete | CRUD, gallery, cover, variants, stages/print areas, printing methods. |
+| Dashboard | Complete | Real-time stats (revenue, orders, customers, products), recent orders, recent activity, order status distribution. Collapsible sidebar with persisted state, mobile drawer, section-based navigation (OVERVIEW/COMMERCE/DESIGN/SYSTEM). |
+| Orders | Complete | Search, status filter, pagination, order detail modal with status/payment updates and print-ready file downloads. |
+| Products | Complete | CRUD, gallery, cover, variants, stages/print areas, printing methods. Product detail with tabs (Details/Gallery/Stages/Variants/Printing). |
 | Categories | Complete | CRUD with images. |
 | Pricing rules | Complete | Product/method scoped rule management. |
 | Customers | Complete | List/search/detail, role and active updates. |

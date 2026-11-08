@@ -6,7 +6,7 @@ Date: 2026-11-08
 
 Command: `cd backend && .venv/bin/python manage.py test --verbosity=1`
 
-Result: **71 tests OK** across auth, catalog, designer, commerce, and production.
+Result: **86 tests OK** across auth, catalog, designer, commerce, and production.
 
 - Django system checks: no issues.
 - `makemigrations --check --dry-run`: no changes detected (migrations consistent).

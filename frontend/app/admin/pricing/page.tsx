@@ -195,6 +195,7 @@ export default function AdminPricingPage() {
   return (
     <div className="space-y-7">
       <AdminHeader
+        breadcrumbs={[{ label: "Commerce", href: "/admin" }, { label: "Pricing" }]}
         title="Pricing"
         description="Base print fees, surcharges and the rules that quote every design."
         actions={

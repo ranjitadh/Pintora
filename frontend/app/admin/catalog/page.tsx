@@ -281,15 +281,20 @@ export default function AdminCatalogPage() {
 
   if (loading) return <LoadingBlock label="Loading the design library…" />;
 
+  const tabLabels: Record<Tab, { label: string; action: () => void; icon: React.ElementType }> = {
+    templates: { label: "Templates", action: () => setTemplateOpen(true), icon: Type },
+    cliparts: { label: "Clipart", action: () => setClipartOpen(true), icon: ImagePlus },
+    fonts: { label: "Fonts", action: () => setFontOpen(true), icon: Type },
+  };
+
   return (
-    <div className="space-y-6">
+    <div className="space-y-7">
       <AdminHeader
+        breadcrumbs={[{ label: "Design", href: "/admin" }, { label: "Catalog" }]}
         title="Catalog"
         description="Design templates, clipart and fonts available inside the editor."
         actions={
-          tab === "templates" ? <Button size="sm" onClick={() => setTemplateOpen(true)}><Plus size={14} /> New template</Button>
-            : tab === "cliparts" ? <Button size="sm" onClick={() => setClipartOpen(true)}><Plus size={14} /> New clipart</Button>
-            : <Button size="sm" onClick={() => setFontOpen(true)}><Plus size={14} /> New font</Button>
+          <Button size="sm" onClick={tabLabels[tab].action}><Plus size={14} /> New {tabLabels[tab].label}</Button>
         }
       />
 

@@ -1,12 +1,11 @@
 "use client";
 
-import Link from "next/link";
 import { useEffect, useState } from "react";
 import { ArrowUpRight, Clock3, Package, Palette, ShoppingBag, Users, Wallet } from "lucide-react";
 import { api, errorMessage, mediaUrl } from "@/lib/api";
-import { AdminHeader, StatCard, TableShell, Td, Th } from "@/components/admin";
-import { Alert, Badge, LinkButton, LoadingBlock } from "@/components/ui";
-import type { DashboardData } from "@/lib/types";
+import { AdminHeader, AdminTabs, StatCard, TableShell, Td, Th } from "@/components/admin";
+import { Alert, Badge, Button, LinkButton, LoadingBlock } from "@/components/ui";
+import type { DashboardData, OrderListItem } from "@/lib/types";
 import { formatDate, money, statusTone, titleCase } from "@/lib/utils";
 
 export default function AdminDashboardPage() {
@@ -30,6 +29,7 @@ export default function AdminDashboardPage() {
   return (
     <div className="space-y-7">
       <AdminHeader
+        breadcrumbs={[{ label: "Dashboard" }]}
         title="Good to see you."
         description="A live pulse on orders, revenue, designs and the catalogue."
         actions={
@@ -40,18 +40,20 @@ export default function AdminDashboardPage() {
         }
       />
 
+      {error && <Alert>{error}</Alert>}
+
       <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
-        <StatCard label="Revenue" value={money(data.revenue)} hint={`${data.orders} orders all time`} icon={<Wallet size={18} />} tone="clay" />
-        <StatCard label="Orders" value={data.orders} hint={`${data.pending_orders} still in production`} icon={<ShoppingBag size={18} />} href="/admin/orders" />
-        <StatCard label="Customers" value={data.customers} hint={`${data.designs} saved designs`} icon={<Users size={18} />} href="/admin/customers" />
-        <StatCard label="Catalogue" value={data.products} hint={`${data.active_products} active products`} icon={<Package size={18} />} href="/admin/products" />
+        <StatCard label="Total revenue" value={money(data.revenue)} hint={`${data.orders} orders all time`} icon={<Wallet size={18} />} tone="clay" />
+        <StatCard label="Total orders" value={data.orders} hint={`${data.pending_orders} pending`} icon={<ShoppingBag size={18} />} href="/admin/orders" />
+        <StatCard label="Total customers" value={data.customers} hint={`${data.designs} saved designs`} icon={<Users size={18} />} href="/admin/customers" />
+        <StatCard label="Total products" value={data.products} hint={`${data.active_products} active`} icon={<Package size={18} />} href="/admin/products" />
       </div>
 
       <div className="grid gap-6 xl:grid-cols-[minmax(0,1.6fr)_minmax(0,1fr)]">
-        <section>
+        <section className="space-y-6">
           <div className="mb-3 flex items-center justify-between">
             <h2 className="font-display text-2xl">Recent orders</h2>
-            <Link href="/admin/orders" className="text-xs font-semibold text-clay hover:underline">View all</Link>
+            <LinkButton href="/admin/orders" className="text-xs font-semibold text-clay hover:underline">View all</LinkButton>
           </div>
           <TableShell>
             {data.recent_orders.length === 0 ? (
@@ -71,7 +73,7 @@ export default function AdminDashboardPage() {
                   {data.recent_orders.map((order) => (
                     <tr key={order.id} className="hover:bg-sand/20">
                       <Td>
-                        <Link href={`/admin/orders?focus=${order.id}`} className="font-semibold text-clay hover:underline">{order.number}</Link>
+                        <LinkButton href={`/admin/orders?focus=${order.id}`} size="sm" variant="ghost">{order.number}</LinkButton>
                       </Td>
                       <Td className="max-w-[160px] truncate text-muted">{order.customer_email || "—"}</Td>
                       <Td><Badge className={statusTone[order.status] || "bg-sand"}>{titleCase(order.status)}</Badge></Td>
@@ -87,7 +89,7 @@ export default function AdminDashboardPage() {
 
         <section className="space-y-6">
           <div className="card p-5">
-            <h2 className="font-display text-xl">Production board</h2>
+            <h2 className="font-display text-xl">Order status distribution</h2>
             <p className="mt-1 text-xs text-muted">Orders by current status.</p>
             <div className="mt-4 space-y-3">
               {data.orders_by_status.length === 0 && <p className="text-xs text-muted">Nothing in the queue.</p>}
@@ -107,13 +109,13 @@ export default function AdminDashboardPage() {
 
           <div className="card p-5">
             <div className="flex items-center justify-between">
-              <h2 className="font-display text-xl">Fresh designs</h2>
+              <h2 className="font-display text-xl">Recent activity</h2>
               <Palette size={16} className="text-clay" />
             </div>
-            <div className="mt-3 space-y-2">
+            <div className="mt-3 space-y-3">
               {data.recent_designs.length === 0 && <p className="text-xs text-muted">No designs saved yet.</p>}
               {data.recent_designs.slice(0, 5).map((design) => (
-                <div key={design.id} className="flex items-center gap-3 rounded-xl p-1.5">
+                <div key={design.id} className="flex items-center gap-3 rounded-xl p-1.5 hover:bg-sand/50 transition">
                   <div className="h-10 w-10 shrink-0 overflow-hidden rounded-lg bg-sand">
                     {design.preview_url ? (
                       <img src={mediaUrl(design.preview_url)} alt="" className="h-full w-full object-cover" />

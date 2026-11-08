@@ -77,8 +77,13 @@ export default function AdminCustomersPage() {
   };
 
   return (
-    <div className="space-y-6">
-      <AdminHeader title="Customers" description="People with a Printora account, their designs and order history." actions={<Badge className="bg-ink/5 text-muted">{count} customers</Badge>} />
+    <div className="space-y-7">
+      <AdminHeader
+        breadcrumbs={[{ label: "Commerce", href: "/admin" }, { label: "Customers" }]}
+        title="Customers"
+        description="People with a Printora account, their designs and order history."
+        actions={<Badge className="bg-ink/5 text-muted">{count} customers</Badge>}
+      />
       {error && <Alert>{error}</Alert>}
 
       <form onSubmit={submitSearch} className="flex w-full gap-2 sm:max-w-md">

@@ -151,7 +151,11 @@ export default function AdminSettingsPage() {
 
   return (
     <div className="space-y-7">
-      <AdminHeader title="Settings" description="Store economics, demo behaviour and the Shopify bridge." />
+      <AdminHeader
+        breadcrumbs={[{ label: "System", href: "/admin" }, { label: "Settings" }]}
+        title="Settings"
+        description="Store economics, demo behaviour and the Shopify bridge."
+      />
 
       {error && <Alert>{error}</Alert>}
       {notice && <Alert tone="success">{notice}</Alert>}

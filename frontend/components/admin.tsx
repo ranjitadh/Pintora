@@ -1,27 +1,311 @@
 "use client";
 
 import Link from "next/link";
+import { useCallback, useEffect, useState } from "react";
+import {
+  ArrowLeft,
+  BadgeDollarSign,
+  Bell,
+  ChevronRight,
+  LayoutDashboard,
+  LogOut,
+  Menu,
+  Package,
+  Palette,
+  Settings,
+  Shapes,
+  ShoppingBag,
+  Store,
+  Users,
+  X,
+} from "lucide-react";
+import { useAuth } from "@/lib/auth";
 import { cn } from "@/lib/utils";
 
-export function AdminHeader({
-  eyebrow = "Studio admin",
-  title,
-  description,
-  actions,
-}: {
+const SIDEBAR_STORAGE_KEY = "printora:admin:sidebarCollapsed";
+
+export interface AdminNavItem {
+  href: string;
+  label: string;
+  icon: React.ElementType;
+  exact?: boolean;
+}
+
+interface AdminSidebarProps {
+  className?: string;
+}
+
+const SECTIONS: { title: string; items: AdminNavItem[] }[] = [
+  {
+    title: "OVERVIEW",
+    items: [{ href: "/admin", label: "Dashboard", icon: LayoutDashboard, exact: true }],
+  },
+  {
+    title: "COMMERCE",
+    items: [
+      { href: "/admin/orders", label: "Orders", icon: ShoppingBag },
+      { href: "/admin/products", label: "Products", icon: Package },
+      { href: "/admin/customers", label: "Customers", icon: Users },
+      { href: "/admin/pricing", label: "Pricing", icon: BadgeDollarSign },
+    ],
+  },
+  {
+    title: "DESIGN",
+    items: [{ href: "/admin/catalog", label: "Catalog", icon: Shapes }],
+  },
+  {
+    title: "SYSTEM",
+    items: [{ href: "/admin/settings", label: "Settings", icon: Settings }],
+  },
+];
+
+export function AdminSidebar({ className }: AdminSidebarProps) {
+  const { logout } = useAuth();
+  const [collapsed, setCollapsed] = useState(false);
+  const [mobileOpen, setMobileOpen] = useState(false);
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => {
+    setMounted(true);
+    try {
+      const stored = localStorage.getItem(SIDEBAR_STORAGE_KEY);
+      if (stored !== null) setCollapsed(stored === "true");
+    } catch {}
+  }, []);
+
+  const toggleCollapse = useCallback(() => {
+    setCollapsed((prev) => {
+      const next = !prev;
+      try {
+        localStorage.setItem(SIDEBAR_STORAGE_KEY, String(next));
+      } catch {}
+      return next;
+    });
+  }, []);
+
+  const closeMobile = useCallback(() => setMobileOpen(false), []);
+
+  return (
+    <>
+      {/* Desktop sidebar */}
+      <aside
+        className={cn(
+          "fixed inset-y-0 left-0 z-20 flex flex-col border-r border-ink/10 bg-white transition-all duration-300",
+          collapsed ? "w-20" : "w-64",
+          className
+        )}
+        aria-label="Main navigation"
+      >
+        <div className="flex items-center justify-between px-4 h-14 border-b border-ink/10">
+          <Link
+            href="/admin"
+            className="flex items-center gap-2"
+            title={collapsed ? "Printora Studio" : undefined}
+          >
+            <span className="flex h-9 w-9 items-center justify-center rounded-full bg-ink text-cream">
+              <Store size={18} />
+            </span>
+            {!collapsed && (
+              <span>
+                <span className="block font-display text-xl leading-none">Printora</span>
+                <span className="text-[10px] uppercase tracking-[0.18em] text-muted">Studio admin</span>
+              </span>
+            )}
+          </Link>
+          <button
+            onClick={toggleCollapse}
+            className="rounded-full p-1.5 text-muted hover:bg-ink/5 hover:text-ink transition"
+            title={collapsed ? "Expand sidebar" : "Collapse sidebar"}
+            aria-label={collapsed ? "Expand sidebar" : "Collapse sidebar"}
+          >
+            {collapsed ? <ChevronRight size={16} /> : <ArrowLeft size={16} />}
+          </button>
+        </div>
+
+        <nav className="flex-1 space-y-2 px-2 py-3 overflow-y-auto">
+          {SECTIONS.map((section) => (
+            <div key={section.title} className="mb-2">
+              <h3 className="px-3 mb-1 text-[10px] font-semibold uppercase tracking-wider text-muted">
+                {section.title}
+              </h3>
+              <div className="space-y-0.5">
+                {section.items.map((item) => {
+                  const Icon = item.icon;
+                  return (
+                    <Link
+                      key={item.href}
+                      href={item.href}
+                      className={cn(
+                        "flex items-center gap-3 rounded-xl px-3 py-2 text-sm font-medium transition",
+                        "text-muted hover:bg-white hover:text-ink"
+                      )}
+                      title={collapsed ? item.label : undefined}
+                      aria-label={collapsed ? item.label : undefined}
+                    >
+                      <div className="shrink-0 rounded-lg bg-ink/5 p-1.5 text-clay">
+                        <Icon size={16} />
+                      </div>
+                      {!collapsed && <span>{item.label}</span>}
+                    </Link>
+                  );
+                })}
+              </div>
+            </div>
+          ))}
+        </nav>
+
+        <div className="px-3 pb-4">
+          <div className="px-2 pt-2 card">
+            <button
+              onClick={logout}
+              className={cn(
+                "flex w-full items-center gap-2 rounded-lg px-2 py-2 text-xs font-medium transition",
+                "text-muted hover:bg-ink/5 hover:text-ink"
+              )}
+            >
+              <LogOut size={14} />
+              {collapsed ? "Sign out" : <span>Sign out</span>}
+            </button>
+          </div>
+        </div>
+      </aside>
+
+      {/* Mobile drawer */}
+      <div
+        className={cn(
+          "fixed inset-y-0 left-0 z-40 flex flex-col bg-white border-r border-ink/10 transition-transform duration-300",
+          mobileOpen ? "translate-x-0" : "-translate-x-full",
+          "lg:hidden w-64"
+        )}
+      >
+        <div className="flex items-center justify-between px-4 h-14 border-b border-ink/10">
+          <Link href="/admin" className="flex items-center gap-2">
+            <span className="flex h-9 w-9 items-center justify-center rounded-full bg-ink text-cream">
+              <Store size={18} />
+            </span>
+            <span className="block font-display text-xl leading-none">Printora</span>
+          </Link>
+          <button
+            onClick={closeMobile}
+            className="rounded-full p-1.5 text-muted hover:bg-ink/5 hover:text-ink transition"
+            aria-label="Close navigation"
+          >
+            <X size={16} />
+          </button>
+        </div>
+
+        <nav className="flex-1 space-y-2 px-2 py-3 overflow-y-auto">
+          {SECTIONS.map((section) => (
+            <div key={section.title} className="mb-2">
+              <h3 className="px-3 mb-1 text-[10px] font-semibold uppercase tracking-wider text-muted">
+                {section.title}
+              </h3>
+              <div className="space-y-0.5">
+                {section.items.map((item) => (
+                  <Link
+                    key={item.href}
+                    href={item.href}
+                    onClick={closeMobile}
+                    className={cn(
+                      "flex items-center gap-3 rounded-xl px-3 py-2 text-sm font-medium transition",
+                      "text-muted hover:bg-white hover:text-ink"
+                    )}
+                  >
+                    <item.icon size={16} />
+                    {item.label}
+                  </Link>
+                ))}
+              </div>
+            </div>
+          ))}
+        </nav>
+
+        <div className="px-3 pb-4">
+          <div className="px-2 pt-2 card">
+            <button
+              onClick={logout}
+              className="flex w-full items-center gap-2 rounded-lg px-2 py-2 text-xs font-medium transition text-muted hover:bg-ink/5 hover:text-ink"
+            >
+              <LogOut size={14} />
+              Sign out
+            </button>
+          </div>
+        </div>
+      </div>
+
+      {/* Mobile backdrop */}
+      {mobileOpen && (
+        <div
+          className="fixed inset-0 z-30 bg-black/40 backdrop-blur-sm lg:hidden"
+          onClick={closeMobile}
+        />
+      )}
+    </>
+  );
+}
+
+interface AdminHeaderProps {
   eyebrow?: string;
+  breadcrumbs?: { label: string; href?: string }[];
   title: string;
   description?: string;
   actions?: React.ReactNode;
-}) {
+  className?: string;
+}
+
+export function AdminHeader({
+  eyebrow = "Studio admin",
+  breadcrumbs,
+  title,
+  description,
+  actions,
+  className,
+}: AdminHeaderProps) {
   return (
-    <div className="flex flex-wrap items-end justify-between gap-4">
-      <div>
-        <p className="eyebrow">{eyebrow}</p>
-        <h1 className="mt-1 font-display text-4xl">{title}</h1>
-        {description && <p className="mt-2 max-w-2xl text-sm text-muted">{description}</p>}
+    <div className={cn("flex flex-col gap-2", className)}>
+      {breadcrumbs && breadcrumbs.length > 0 && (
+        <div className="flex flex-wrap items-center gap-1 text-[10px] uppercase tracking-[0.18em] text-muted">
+          {breadcrumbs.map((crumb, index) => (
+            <span key={crumb.label} className="flex items-center gap-1">
+              {index > 0 && <ChevronRight size={10} className="text-muted" />}
+              {crumb.href ? (
+                <Link href={crumb.href} className="hover:text-clay transition">
+                  {crumb.label}
+                </Link>
+              ) : (
+                <span className="text-clay font-semibold">{crumb.label}</span>
+              )}
+            </span>
+          ))}
+        </div>
+      )}
+      <div className="flex flex-wrap items-end justify-between gap-4">
+        <div>
+          <p className="eyebrow">{eyebrow}</p>
+          <h1 className="mt-1 font-display text-4xl">{title}</h1>
+          {description && <p className="mt-2 max-w-2xl text-sm text-muted">{description}</p>}
+        </div>
+        {actions && <div className="flex flex-wrap items-center gap-2">{actions}</div>}
       </div>
-      {actions && <div className="flex flex-wrap items-center gap-2">{actions}</div>}
+    </div>
+  );
+}
+
+export function AdminMobileHeader({ title, onMenu }: { title: string; onMenu: () => void }) {
+  const { logout } = useAuth();
+  return (
+    <div className="mb-5 flex items-center justify-between lg:hidden">
+      <button
+        onClick={onMenu}
+        className="flex items-center gap-2 rounded-lg border border-ink/15 bg-white px-3 py-2 text-clay hover:bg-clay hover:text-cream transition"
+      >
+        <Menu size={16} />
+        <span className="text-xs font-semibold uppercase tracking-wider">Menu</span>
+      </button>
+      <Link href="/admin" className="flex items-center gap-2 font-display text-xl">
+        <Store size={18} className="text-clay" /> Studio
+      </Link>
+      <button onClick={logout} className="text-xs font-semibold text-muted">Sign out</button>
     </div>
   );
 }

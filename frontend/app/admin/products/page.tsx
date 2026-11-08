@@ -169,8 +169,9 @@ export default function AdminProductsPage() {
   };
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-7">
       <AdminHeader
+        breadcrumbs={[{ label: "Commerce", href: "/admin" }, { label: "Products" }]}
         title="Products"
         description="The catalogue, canvases, stages and print configuration."
         actions={

@@ -4,8 +4,8 @@ import { Suspense, useCallback, useEffect, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import { Download, Search, SlidersHorizontal } from "lucide-react";
 import { api, errorMessage, mediaUrl } from "@/lib/api";
-import { AdminHeader, TableShell, Td, Th } from "@/components/admin";
-import { Alert, Badge, Button, Field, LoadingBlock, Modal } from "@/components/ui";
+import { AdminHeader, StatCard, TableShell, Td, Th } from "@/components/admin";
+import { Alert, Badge, Button, Field, LinkButton, LoadingBlock, Modal } from "@/components/ui";
 import type { Order, OrderListItem, Paginated } from "@/lib/types";
 import { formatDate, money, ORDER_STATUSES, PAYMENT_STATUSES, statusTone, titleCase } from "@/lib/utils";
 
@@ -89,8 +89,9 @@ function AdminOrdersContent() {
   };
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-7">
       <AdminHeader
+        breadcrumbs={[{ label: "Commerce", href: "/admin" }, { label: "Orders" }]}
         title="Orders"
         description="Track production stages, update payment status and grab print-ready files."
         actions={<Badge className="bg-ink/5 text-muted">{count} orders</Badge>}

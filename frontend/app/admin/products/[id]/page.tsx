@@ -494,13 +494,13 @@ export default function AdminProductDetailPage() {
   );
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-7">
       <Link href="/admin/products" className="inline-flex items-center gap-1.5 text-xs font-semibold text-muted hover:text-ink">
         <ArrowLeft size={14} /> All products
       </Link>
 
       <AdminHeader
-        eyebrow={product.is_active ? "Active product" : "Draft product"}
+        breadcrumbs={[{ label: "Commerce", href: "/admin" }, { label: "Products", href: "/admin/products" }, { label: product.name }]}
         title={product.name}
         description={`/${product.slug} · updated ${formatDate(product.updated_at)}`}
         actions={
@@ -713,7 +713,7 @@ export default function AdminProductDetailPage() {
           </div>
 
           <div className="rounded-xl border border-ink/10 bg-sand/30 p-4">
-            <p className="mb-3 text-xs font-semibold uppercase tracking-wide text-muted">Print area</p>
+            <p className="mb-3 text-xs font-semibold uppercase tracking-wider text-muted">Print area</p>
             <div className="grid gap-3 sm:grid-cols-3">
               <Field label="Area name"><input value={stageForm.name_area} onChange={(event) => setStageForm((current) => ({ ...current, name_area: event.target.value }))} className="field" /></Field>
               <Field label="Width (mm)"><input required type="number" step="0.01" value={stageForm.width_mm} onChange={(event) => setStageForm((current) => ({ ...current, width_mm: event.target.value }))} className="field" /></Field>
