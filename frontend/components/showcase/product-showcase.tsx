@@ -16,7 +16,8 @@ import {
   Truck,
 } from "lucide-react";
 import { BeforeAfterSlider } from "./before-after-slider";
-import { ColorPicker, ImageTint } from "./color-picker";
+import { ColorPicker } from "./color-picker";
+import { ImageTint } from "./color-picker";
 import { SHOWCASE_CATEGORIES, SHOWCASE_COLORS, SHOWCASE_SLIDES, ShowcaseCategory, ShowcaseSlide } from "./data";
 
 const FEATURE_ICONS: any[] = [Check, Layers, Sparkles, ArrowRight, PackageCheck, Printer, ShoppingBag, Truck];
@@ -51,7 +52,7 @@ export function ProductShowcase() {
       return;
     }
     setMounted(false);
-    const timer = setTimeout(() => setMounted(true), 300);
+    const timer = setTimeout(() => setMounted(true), 250);
     return () => clearTimeout(timer);
   }, [activeSlideIndex]);
 
@@ -78,7 +79,7 @@ export function ProductShowcase() {
       <div className="absolute -inset-1/2 top-1/2 h-full w-[200%] bg-clay/10 blur-[100px] rotate-12 pointer-events-none" />
 
       <div className="container-x relative">
-        <div className="grid items-start gap-12 lg:grid-cols-[1fr_280px] lg:gap-16">
+        <div className="grid gap-12 lg:grid-cols-[1fr_280px] lg:gap-16">
           <PreviewColumn
             currentCategory={currentCategory}
             categories={SHOWCASE_CATEGORIES}
@@ -95,7 +96,7 @@ export function ProductShowcase() {
             slides={SHOWCASE_SLIDES}
             activeIndex={activeSlideIndex}
             onSelect={setActiveSlideIndex}
-            className="flex-row lg:flex-col self-start"
+            className="flex gap-2 self-start"
           />
         </div>
       </div>
@@ -130,7 +131,7 @@ function PreviewColumn({
         Product preview &middot; {currentCategory.label}
       </p>
 
-      <ColorPicker colors={colors} value={selectedColor} onChange={setSelectedColor} label="Color" />
+      <ColorPicker colors={colors} value={selectedColor} onChange={setSelectedColor} label="Colour" />
 
       <div className="flex gap-1 overflow-x-auto scrollbar-hide pb-2">
         {categories.map((category, index) => (

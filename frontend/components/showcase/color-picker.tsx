@@ -12,6 +12,15 @@ interface ColorPickerProps {
   label?: string;
 }
 
+export function ImageTint({ hex }: { hex: string }) {
+  return (
+    <div
+      className="absolute inset-0 pointer-events-none"
+      style={{ backgroundColor: hex, mixBlendMode: "overlay", opacity: 0.35 }}
+    />
+  );
+}
+
 export function ColorPicker({ colors, value, onChange, label = "Color" }: ColorPickerProps) {
   const [custom, setCustom] = useState(value);
   const selected = colors.find((c) => c.hex === value);
@@ -34,20 +43,20 @@ export function ColorPicker({ colors, value, onChange, label = "Color" }: ColorP
   );
 
   return (
-    <div className="flex flex-col gap-2">
+    <div className="flex flex-col gap-3">
       <div className="flex items-center gap-2">
         <span className="font-mono text-[10px] uppercase tracking-[0.24em] text-clay/60">{label}</span>
         {selected && (
           <span className="ml-auto text-[11px] font-semibold text-cream/90">{selected.name}</span>
         )}
       </div>
-      <div className="flex items-center gap-2">
+      <div className="flex items-center gap-2.5">
         {colors.map((color) => (
           <button
             key={color.hex}
             onClick={() => handleSwatch(color.hex)}
             className={cn(
-              "shrink-0 h-7 w-7 rounded-full border-2 transition duration-200 focus:outline-none focus:ring-2 focus:ring-clay",
+              "shrink-0 h-8 w-7 rounded-full border-2 transition duration-200 focus:outline-none focus:ring-2 focus:ring-clay",
               value === color.hex
                 ? "border-clay shadow-[0_0_0_3px_rgba(255,255,255,0.6)]"
                 : "border-white/20 hover:border-white/50"
@@ -72,14 +81,3 @@ export function ColorPicker({ colors, value, onChange, label = "Color" }: ColorP
     </div>
   );
 }
-
-function ImageTint({ hex }: { hex: string }) {
-  return (
-    <div
-      className="absolute inset-0 pointer-events-none"
-      style={{ backgroundColor: hex, mixBlendMode: "overlay", opacity: 0.35 }}
-    />
-  );
-}
-
-export { ImageTint };

@@ -86,7 +86,7 @@ export function BeforeAfterSlider({ beforeSrc, afterSrc, beforeLabel, afterLabel
     <div
       ref={containerRef}
       className={cn(
-        "relative overflow-hidden rounded-3xl bg-ink shadow-card",
+        "relative overflow-hidden rounded-2xl bg-ink shadow-card overflow-hidden",
         className
       )}
       onClick={onContainerClick}
@@ -98,9 +98,15 @@ export function BeforeAfterSlider({ beforeSrc, afterSrc, beforeLabel, afterLabel
       aria-valuemax={100}
       tabIndex={0}
     >
-      <div className="absolute inset-0 flex items-end justify-between p-4 pointer-events-none text-xs font-mono uppercase tracking-wider">
-        <span className="bg-white/90 text-ink px-2 py-1 rounded"> {beforeLabel} </span>
-        <span className="bg-white/90 text-ink px-2 py-1 rounded"> {afterLabel} </span>
+      <div className="absolute inset-0 h-full w-full overflow-hidden">
+        <img
+          src={afterSrc}
+          alt=""
+          data-testid="slider-after"
+          className="h-full w-full object-cover"
+          style={afterStyle}
+          aria-hidden="true"
+        />
       </div>
 
       <img
@@ -111,15 +117,9 @@ export function BeforeAfterSlider({ beforeSrc, afterSrc, beforeLabel, afterLabel
         aria-hidden="true"
       />
 
-      <div className="absolute inset-0 h-full w-full overflow-hidden">
-        <img
-          src={afterSrc}
-          alt=""
-          data-testid="slider-after"
-          className="h-full w-full object-cover"
-          style={afterStyle}
-          aria-hidden="true"
-        />
+      <div className="absolute inset-0 flex items-end justify-between p-4 pointer-events-none text-xs font-mono uppercase tracking-wider">
+        <span className="bg-white/90 text-ink px-2 py-1 rounded"> {beforeLabel} </span>
+        <span className="bg-white/90 text-ink px-2 py-1 rounded"> {afterLabel} </span>
       </div>
 
       <button
