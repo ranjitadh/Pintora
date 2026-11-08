@@ -7,12 +7,13 @@ import { SiteFooter } from "@/components/site-footer";
 export function EditorShell({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const isEditor = pathname.startsWith("/editor");
+  const isAdmin = pathname.startsWith("/admin");
 
   return (
     <>
-      {!isEditor && <SiteHeader />}
+      {!isEditor && !isAdmin && <SiteHeader />}
       <main>{children}</main>
-      {!isEditor && <SiteFooter />}
+      {!isEditor && !isAdmin && <SiteFooter />}
     </>
   );
 }
