@@ -29,6 +29,7 @@ const config: Config = {
         card: "0 18px 50px -30px rgba(33,27,22,0.35)",
       },
     },
+    darkMode: "class",
   },
   plugins: [],
 };

@@ -24,21 +24,29 @@ export function setTheme(theme: Theme) {
 export function useTheme() {
   const [theme, setThemeState] = useState<Theme>(() => getTheme());
 
-  useEffect(() => {
-    setThemeState(getTheme());
-    document.documentElement.setAttribute("data-theme", theme);
-    if (theme === "dark") {
+  const setTheme = useCallback((nextTheme: Theme) => {
+    setThemeState(nextTheme);
+    if (nextTheme === "dark") {
+      document.documentElement.setAttribute("data-theme", "dark");
       document.documentElement.classList.add("dark");
     } else {
+      document.documentElement.setAttribute("data-theme", "light");
       document.documentElement.classList.remove("dark");
+    }
+  }, []);
+
+  useEffect(() => {
+    setMounted(true);
+    const stored = localStorage.getItem("printora-theme") as Theme | null;
+    if (stored) {
+      setTheme(stored);
     }
   }, []);
 
   const toggleTheme = useCallback(() => {
     const next = theme === "light" ? "dark" : "light";
     setTheme(next);
-    setThemeState(next);
-  }, [theme]);
+  }, [theme, setTheme]);
 
-  return { theme, setTheme: setThemeState, toggleTheme, isDark: theme === "dark" };
+  return { theme, setTheme, toggleTheme, isDark: theme === "dark" };
 }
