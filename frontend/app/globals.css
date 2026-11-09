@@ -38,6 +38,11 @@
   font-display: swap;
 }
 
+:root {
+  color: #211b16;
+  background: #fbf7ef;
+}
+
 html {
   scroll-behavior: smooth;
 }
@@ -102,11 +107,6 @@ body {
 }
 
 /* Dark mode overrides */
-html.dark {
-  color: #fbf7ef;
-  background-color: #211b16;
-}
-
 html.dark .text-ink {
   color: #fbf7ef;
 }
@@ -161,10 +161,40 @@ html.dark .text-rose-600 {
   color: #e11d48;
 }
 
-html.dark .field {
-  @apply border-white/20 bg-white/10 text-ink/90;
+html.dark .bg-ink {
+  background-color: #fbf7ef;
+}
+html.dark .bg-cream {
+  background-color: #211b16;
+}
+html.dark .bg-sand {
+  background-color: #211b16;
+}
+html.dark .bg-sand\/50 {
+  background-color: rgba(33, 27, 22, 0.5);
+}
+html.dark .bg-ink\/10 {
+  background-color: rgba(251, 247, 239, 0.1);
+}
+html.dark .bg-ink\/15 {
+  color: rgba(33, 27, 22, 0.15);
+  background-color: rgba(33, 27, 22, 0.15);
 }
 
-html.dark .card {
-  @apply border-white/20 bg-white/10 text-ink/90;
+html.dark .text-clay {
+  color: #fbf7ef;
+}
+html.dark .border-ink\/15 {
+  border-color: rgba(251, 247, 239, 0.15);
+}
+html.dark .text-muted {
+  color: #a8a29e;
+}
+
+html.dark .bg-white {
+  background-color: #211b16;
+  color: #fbf7ef;
+}
+html.dark .text-ink\/90 {
+  color: #fbf7ef;
 }

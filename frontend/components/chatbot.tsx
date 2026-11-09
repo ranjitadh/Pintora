@@ -40,20 +40,20 @@ export function Chatbot({ open: openProp, onOpenChange: onOpenChangeProp }: Chat
     }
   };
 
-  const handleSend = async (text?: string) => {
-    const textToSend = text ?? input.trim();
-    if (!textToSend || loading) return;
+  const handleSend = async () => {
+    const textValue = input.trim();
+    if (!textValue || loading) return;
 
     setInput("");
     inputRef.current?.blur();
     setLoading(true);
     setError(null);
-    addMessage("user", textToSend);
+    addMessage("user", textValue);
 
     try {
       const history = messages.slice(-8).map((m) => ({ role: m.role, content: m.content }));
       const data = await api.post<AssistantReply>("/assistant/chat/", {
-        message: text,
+        message: textValue,
         history,
       });
       addMessage("assistant", data.reply);
@@ -68,7 +68,7 @@ export function Chatbot({ open: openProp, onOpenChange: onOpenChangeProp }: Chat
 
   const handleSuggestionClick = (text: string) => {
     setInput(text);
-    handleSend(text);
+    handleSend();
   };
 
   const handleFormSubmit = async (e: React.FormEvent) => {
