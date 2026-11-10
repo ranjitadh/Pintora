@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import Image from "next/image";
 import { useEffect, useState } from "react";
 import { LogOut, Menu, ShoppingBag, UserRound, X } from "lucide-react";
 import { useAuth } from "@/lib/auth";
@@ -37,8 +38,7 @@ export function SiteHeader() {
       <header className="sticky top-0 z-40 border-b border-ink/10 bg-cream/90 backdrop-blur-xl dark:border-white/10 dark:bg-ink/95">
         <div className="container-x flex h-16 items-center justify-between gap-4">
           <Link href="/" className="flex items-center gap-2.5">
-            <span className="flex h-9 w-9 items-center justify-center rounded-full bg-clay text-white">
-            </span>
+            <Image src="/logo.svg" alt="MerchPress" width={32} height={32} className="rounded-full bg-clay" />
             <span className="font-display text-2xl font-semibold tracking-tight">MerchPress</span>
           </Link>
 
