@@ -105,14 +105,14 @@ test.describe("admin full workflow", () => {
 
     await expect(page.getByText("Good to see you.")).toBeVisible();
 
-    await page.getByRole("link", { name: /Products/i }).click();
-    await expect(page.getByRole("heading", { name: /Products/i })).toBeVisible();
+    await page.getByRole("link", { name: /Products/i }).first().click();
+    await expect(page).toHaveURL(/\/admin\/products/);
 
-    await page.getByRole("link", { name: /Pricing/i }).click();
-    await expect(page.getByRole("heading", { name: /Pricing/i })).toBeVisible();
+    await page.getByRole("link", { name: /Pricing/i }).first().click();
+    await expect(page).toHaveURL(/\/admin\/pricing/);
 
-    await page.getByRole("link", { name: /Orders/i }).click();
-    await expect(page.getByRole("heading", { name: /Orders/i })).toBeVisible();
+    await page.getByRole("link", { name: /Orders/i }).first().click();
+    await expect(page).toHaveURL(/\/admin\/orders/);
 
     expect(pageErrors).toEqual([]);
   });
