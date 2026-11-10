@@ -7,11 +7,12 @@ import types
 from decimal import Decimal
 from unittest import mock
 
+from django.core.cache import cache
 from django.test import override_settings
 from rest_framework import status
 
 from catalog.models import PricingRule
-from commerce.models import Cart, Order, OrderItem, StoreConfiguration, WebhookEvent
+from commerce.models import Cart, NewsletterSubscriber, Order, OrderItem, StoreConfiguration, WebhookEvent
 from commerce.services import CartError
 from commerce.shopify import sync_inventory
 from core.testing import TempMediaTestCase, design_payload, make_product, make_user
@@ -591,3 +592,55 @@ class CommerceApiTests(TempMediaTestCase):
         self.assertEqual(self.variant.stock_quantity, 0)
         self.assertEqual(Order.objects.count(), 1)
         self.assertGreaterEqual(self.variant.stock_quantity, 0, "Stock must never be negative")
+
+
+class NewsletterApiTests(TempMediaTestCase):
+    url = "/api/newsletter/subscribe/"
+
+    def setUp(self):
+        cache.clear()
+
+    def test_valid_email_subscribes(self):
+        response = self.client.post(
+            self.url, {"email": "Reader@Example.com", "source": "footer"}, format="json"
+        )
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED, response.data)
+        self.assertTrue(response.data["subscribed"])
+        self.assertFalse(response.data["already_subscribed"])
+        subscriber = NewsletterSubscriber.objects.get()
+        self.assertEqual(subscriber.email, "reader@example.com")
+        self.assertEqual(subscriber.source, "footer")
+        self.assertTrue(subscriber.is_active)
+
+    def test_duplicate_email_returns_200_and_single_record(self):
+        first = self.client.post(self.url, {"email": "reader@example.com"}, format="json")
+        second = self.client.post(self.url, {"email": "READER@example.com"}, format="json")
+        self.assertEqual(first.status_code, status.HTTP_201_CREATED, first.data)
+        self.assertEqual(second.status_code, status.HTTP_200_OK, second.data)
+        self.assertTrue(second.data["already_subscribed"])
+        self.assertEqual(NewsletterSubscriber.objects.count(), 1)
+        self.assertEqual(NewsletterSubscriber.objects.get().email, "reader@example.com")
+
+    def test_duplicate_updates_source_and_reactivates(self):
+        subscriber = NewsletterSubscriber.objects.create(
+            email="reader@example.com", source="footer", is_active=False
+        )
+        response = self.client.post(
+            self.url, {"email": "reader@example.com", "source": "checkout"}, format="json"
+        )
+        self.assertEqual(response.status_code, status.HTTP_200_OK, response.data)
+        subscriber.refresh_from_db()
+        self.assertTrue(subscriber.is_active)
+        self.assertEqual(subscriber.source, "checkout")
+
+    def test_invalid_email_is_rejected(self):
+        response = self.client.post(self.url, {"email": "not-an-email"}, format="json")
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST, response.data)
+        self.assertIn("email", response.data["errors"])
+        self.assertEqual(NewsletterSubscriber.objects.count(), 0)
+
+    def test_missing_email_is_rejected(self):
+        response = self.client.post(self.url, {}, format="json")
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST, response.data)
+        self.assertIn("email", response.data["errors"])
+        self.assertEqual(NewsletterSubscriber.objects.count(), 0)

@@ -14,16 +14,20 @@ def absolute_url(obj, field, context):
 class TemplateSerializer(serializers.ModelSerializer):
     preview_url = serializers.SerializerMethodField()
     product_slug = serializers.SlugRelatedField(source="product", slug_field="slug", read_only=True)
+    product_name = serializers.SerializerMethodField()
 
     class Meta:
         model = DesignTemplate
         fields = [
             "id", "name", "slug", "category", "tags", "description", "preview_url",
-            "canvas_json", "price", "product", "product_slug", "visibility",
+            "canvas_json", "price", "product", "product_slug", "product_name", "visibility",
         ]
 
     def get_preview_url(self, obj):
         return absolute_url(obj, "preview_image", self.context)
+
+    def get_product_name(self, obj):
+        return obj.product.name if obj.product_id else None
 
 
 class AdminTemplateSerializer(serializers.ModelSerializer):

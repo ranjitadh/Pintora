@@ -25,6 +25,7 @@ cp .env.example .env
 # 3. For HTTPS deployments, keep DEBUG=false and terminate TLS at the proxy.
 # 4. Set NEXT_PUBLIC_BACKEND_ORIGIN to the internal backend address
 #    (http://backend:8000) because Next.js performs the rewrites server-side.
+# 5. Set NEXT_PUBLIC_SITE_URL to the public storefront URL for canonical/OG/JSON-LD.
 docker compose up --build -d
 docker compose --profile seed run --rm seed   # optional demo data
 ```
@@ -43,6 +44,7 @@ Services: PostgreSQL, Redis, backend (Gunicorn), Celery, frontend (`next start`)
 | `SITE_URL`, `BACKEND_URL` | Public HTTPS URLs. |
 | `CELERY_*` | Redis broker/result URLs; set eager to `false`. |
 | `NEXT_PUBLIC_BACKEND_ORIGIN` | Internal backend URL used by Next rewrites; baked at build time, so rebuild after changing it. |
+| `NEXT_PUBLIC_SITE_URL` | Public storefront URL used in canonical, Open Graph and JSON-LD metadata. |
 | `SHOPIFY_WEBHOOK_SECRET` | Must match the Shopify webhook signing secret. |
 
 ## Media and static files

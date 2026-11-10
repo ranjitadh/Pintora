@@ -63,7 +63,9 @@ test.describe("ceramic mug editor regression", () => {
   test("all editor tools work and pricing follows the selected variant", async ({ page, request }) => {
     const pageErrors: string[] = [];
     page.on("pageerror", (error) => pageErrors.push(error.message));
-    const templates = await (await request.get("/api/templates/")).json();
+    const templatesResponse = await request.get("/api/templates/");
+    expect(templatesResponse.ok()).toBeTruthy();
+    const templates = await templatesResponse.json();
     const template = templates.find((item: any) => item.product_slug === "ceramic-mug");
     expect(template).toBeTruthy();
 
@@ -148,7 +150,10 @@ test.describe("ceramic mug editor regression", () => {
     expect(pageErrors).toEqual([]);
   });
 
-  test("save, reload, export and cart keep the design and configuration", async ({ page }) => {
+  test("save, reload, export and cart keep the design and configuration", async ({ page, request }) => {
+    const productResponse = await request.get("/api/products/ceramic-mug/");
+    expect(productResponse.ok()).toBeTruthy();
+    const product = await productResponse.json();
     await register(page, "ceramic-save");
     await openEditor(page);
 
@@ -187,7 +192,7 @@ test.describe("ceramic mug editor regression", () => {
     await page.getByRole("button", { name: /Add to cart/i }).first().click();
     await expect(page).toHaveURL(/\/cart/);
     await expect(page.getByText("White / 11 oz · Sublimation")).toBeVisible();
-    await expect(page.getByText("Artwork: Ceramic Wrap Mug design")).toBeVisible();
+    await expect(page.getByText(`Artwork: ${product.name} design`)).toBeVisible();
 
     const cartResponse = await page.request.get("/api/cart/");
     const cart = await cartResponse.json();

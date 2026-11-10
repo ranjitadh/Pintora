@@ -34,7 +34,7 @@ export function SiteHeader() {
           {announcement}
         </div>
       )}
-      <header className="sticky top-0 z-40 border-b border-ink/10 bg-cream/90 backdrop-blur-xl">
+      <header className="sticky top-0 z-40 border-b border-ink/10 bg-cream/90 backdrop-blur-xl dark:border-white/10 dark:bg-ink/95">
         <div className="container-x flex h-16 items-center justify-between gap-4">
           <Link href="/" className="flex items-center gap-2.5">
             <span className="flex h-9 w-9 items-center justify-center rounded-full bg-clay text-white">
@@ -45,7 +45,7 @@ export function SiteHeader() {
 
           <nav className="hidden items-center gap-7 md:flex">
             {nav.map((item) => (
-              <Link key={item.href} href={item.href} className="link-underline text-sm font-medium text-ink/75 hover:text-ink">
+              <Link key={item.href} href={item.href} className="link-underline text-sm font-medium text-ink/75 hover:text-ink dark:text-cream/75 dark:hover:text-cream">
                 {item.label}
               </Link>
             ))}
@@ -68,7 +68,7 @@ export function SiteHeader() {
                   </span>
                   <span className="max-w-[110px] truncate">{user.first_name || user.display_name}</span>
                 </Link>
-                <button onClick={logout} className="rounded-full p-2 text-muted hover:bg-ink/5 hover:text-ink" title="Sign out">
+                <button onClick={logout} className="rounded-full p-2 text-muted hover:bg-ink/5 hover:text-ink dark:text-cream/60 dark:hover:bg-white/10 dark:hover:text-cream" title="Sign out">
                   <LogOut size={16} />
                 </button>
               </div>

@@ -2,7 +2,7 @@ from django.test import override_settings
 from rest_framework import status
 
 from core.testing import TempMediaTestCase, design_payload, make_product, make_user, png_upload
-from designer.models import Design, DesignAsset
+from designer.models import Design, DesignAsset, DesignTemplate
 from designer.validation import DesignValidationError, validate_canvas
 
 
@@ -162,9 +162,17 @@ class DesignerApiTests(TempMediaTestCase):
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
 
     def test_public_templates_and_cliparts(self):
+        DesignTemplate.objects.create(
+            name="Public test template",
+            slug="public-test-template",
+            category="Test",
+            product=self.product,
+            canvas_json=design_payload(self.stage),
+        )
         self.client.force_authenticate(user=None)
         templates = self.client.get("/api/templates/")
         self.assertEqual(templates.status_code, status.HTTP_200_OK)
+        self.assertEqual(templates.data[0]["product_name"], self.product.name)
         cliparts = self.client.get("/api/cliparts/")
         self.assertEqual(cliparts.status_code, status.HTTP_200_OK)
         self.client.force_authenticate(self.user)

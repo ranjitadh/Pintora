@@ -108,6 +108,7 @@ export interface Template {
   price: string;
   product: string | null;
   product_slug: string | null;
+  product_name: string | null;
   visibility: string;
 }
 

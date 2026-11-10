@@ -126,6 +126,8 @@ E2E_ADMIN_EMAIL=admin@example.com E2E_ADMIN_PASSWORD='strong-password' npm run t
 | `THROTTLE_*` | DRF throttle rates. |
 | `SHOPIFY_*` | Shopify credentials and webhook secret. |
 | `NEXT_PUBLIC_BACKEND_ORIGIN` | Server-side Next proxy target for `/api` and `/media`. |
+| `BACKEND_INTERNAL_URL` | Optional server-only SSR origin; falls back to `NEXT_PUBLIC_BACKEND_ORIGIN`. |
+| `NEXT_PUBLIC_SITE_URL` | Public storefront URL used in canonical, Open Graph and JSON-LD metadata. |
 
 ## Project map
 

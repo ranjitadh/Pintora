@@ -77,7 +77,7 @@ export function AdminSidebar({ className }: AdminSidebarProps) {
                   href={item.href}
                   className={cn(
                     "flex items-center gap-3 rounded-xl px-3 py-2 text-sm font-medium transition",
-                    "text-muted hover:bg-white hover:text-ink"
+                    "text-muted hover:bg-white hover:text-ink dark:text-cream/60 dark:hover:bg-white/10 dark:hover:text-cream"
                   )}
                 >
                   <div className="shrink-0 rounded-lg bg-ink/5 p-1.5 text-clay">
@@ -100,7 +100,7 @@ export function AdminSidebar({ className }: AdminSidebarProps) {
       </span>
       <span>
         <span className="block font-display text-xl leading-none">Printora</span>
-        <span className="text-[10px] uppercase tracking-[0.18em] text-muted">Studio admin</span>
+        <span className="text-[10px] uppercase tracking-[0.18em] text-muted dark:text-cream/50">Studio admin</span>
       </span>
     </Link>
   );
@@ -123,13 +123,13 @@ export function AdminSidebar({ className }: AdminSidebarProps) {
       {/* Desktop sidebar: always open, sticky */}
       <aside
         className={cn(
-          "hidden lg:flex lg:flex-col lg:w-64 lg:shrink-0 lg:sticky lg:top-0 lg:border-r lg:border-ink/10 lg:bg-white",
-          "flex flex-col border-r border-ink/10 bg-white",
+          "hidden lg:flex lg:flex-col lg:w-64 lg:shrink-0 lg:sticky lg:top-0 lg:border-r lg:border-ink/10 lg:bg-white dark:border-white/10 dark:bg-[#2a231d]",
+          "flex flex-col border-r border-ink/10 bg-white dark:border-white/10 dark:bg-[#2a231d]",
           className
         )}
         aria-label="Main navigation"
       >
-        <div className="flex items-center justify-between px-4 h-14 border-b border-ink/10">
+        <div className="flex items-center justify-between px-4 h-14 border-b border-ink/10 dark:border-white/10">
           {renderBrand()}
         </div>
 
@@ -143,16 +143,16 @@ export function AdminSidebar({ className }: AdminSidebarProps) {
       {/* Mobile drawer: fixed overlay */}
       <div
         className={cn(
-          "fixed inset-y-0 left-0 z-50 flex flex-col bg-white border-r border-ink/10 transition-transform duration-300",
+          "fixed inset-y-0 left-0 z-50 flex flex-col bg-white border-r border-ink/10 transition-transform duration-300 dark:border-white/10 dark:bg-[#2a231d]",
           mobileOpen ? "translate-x-0" : "-translate-x-full",
           "lg:hidden w-64"
         )}
       >
-        <div className="flex items-center justify-between px-4 h-14 border-b border-ink/10">
+        <div className="flex items-center justify-between px-4 h-14 border-b border-ink/10 dark:border-white/10">
           {renderBrand()}
           <button
             onClick={closeMobile}
-            className="rounded-full p-1.5 text-muted hover:bg-ink/5 hover:text-ink transition"
+            className="rounded-full p-1.5 text-muted hover:bg-ink/5 hover:text-ink transition dark:text-cream/60 dark:hover:bg-white/10 dark:hover:text-cream"
             aria-label="Close navigation"
           >
             <X size={16} />
@@ -165,7 +165,7 @@ export function AdminSidebar({ className }: AdminSidebarProps) {
           <div className="px-2 pt-2 card">
             <button
               onClick={logout}
-              className="flex w-full items-center gap-2 rounded-lg px-2 py-2 text-xs font-medium transition text-muted hover:bg-ink/5 hover:text-ink"
+              className="flex w-full items-center gap-2 rounded-lg px-2 py-2 text-xs font-medium transition text-muted hover:bg-ink/5 hover:text-ink dark:text-cream/60 dark:hover:bg-white/10 dark:hover:text-cream"
             >
               <LogOut size={14} />
               Sign out
@@ -238,7 +238,7 @@ export function AdminMobileHeader({ title, onMenu }: { title: string; onMenu: ()
     <div className="mb-5 flex items-center justify-between lg:hidden">
       <button
         onClick={onMenu}
-        className="flex items-center gap-2 rounded-lg border border-ink/15 bg-white px-3 py-2 text-clay hover:bg-clay hover:text-cream transition"
+        className="flex items-center gap-2 rounded-lg border border-ink/15 bg-white px-3 py-2 text-clay hover:bg-clay hover:text-cream transition dark:border-white/20 dark:bg-white/10"
       >
         <Menu size={16} />
         <span className="text-xs font-semibold uppercase tracking-wider">Menu</span>

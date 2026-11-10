@@ -339,25 +339,45 @@ export function DesignEditor({
     async (template: Template) => {
       const canvas = fabricRef.current;
       const stage = product.stages.find((item) => item.id === activeStageRef.current);
-      if (!canvas || !stage?.print_area || !template.canvas_json) return;
-      const json = scaleCanvasJson(template.canvas_json, stage.print_area);
+      if (!canvas || !stage?.print_area) return;
+
+      const templateJson = template.canvas_json;
+      const hasContent =
+        templateJson !== null &&
+        typeof templateJson === "object" &&
+        !Array.isArray(templateJson) &&
+        (Array.isArray(templateJson.objects)
+          ? templateJson.objects.length > 0
+          : Object.keys(templateJson).length > 0);
+
+      if (!hasContent) {
+        setNotice("This template has no design saved yet. Try another template.");
+        return;
+      }
+
+      const json = scaleCanvasJson(templateJson, stage.print_area);
       loadingRef.current = true;
-      canvas.loadFromJSON(normalizeCanvasJson(json), () => {
-        canvas.renderAll();
+      try {
+        canvas.loadFromJSON(normalizeCanvasJson(json), () => {
+          canvas.renderAll();
+          loadingRef.current = false;
+          const id = activeStageRef.current;
+          const state = stageStates.current[id];
+          if (state) {
+            state.last = canvas.toJSON();
+            state.undo.push(state.last);
+            state.redo = [];
+          }
+          setDirty(true);
+          refreshLayers();
+          notifySelection();
+          setNotice(`Applied “${template.name}” — make it yours.`);
+          setPanelOpen(false);
+        });
+      } catch {
         loadingRef.current = false;
-        const id = activeStageRef.current;
-        const state = stageStates.current[id];
-        if (state) {
-          state.last = canvas.toJSON();
-          state.undo.push(state.last);
-          state.redo = [];
-        }
-        setDirty(true);
-        refreshLayers();
-        notifySelection();
-        setNotice(`Applied “${template.name}” — make it yours.`);
-        setPanelOpen(false);
-      });
+        setNotice("That template could not be loaded. Please try another one.");
+      }
     },
     [notifySelection, product.stages, refreshLayers]
   );
@@ -575,7 +595,7 @@ export function DesignEditor({
   const addText = () => {
     const fabric = fabricLibRef.current;
     const canvas = fabricRef.current;
-    if (!fabric || !canvas || !activeArea) return;
+    if (!ready || !fabric || !canvas || !activeArea) return;
     const value = (newText || "Your text").trim();
     const object = new fabric.IText(value, {
       left: activeArea.width_px / 2,
@@ -1260,7 +1280,7 @@ export function DesignEditor({
                     rows={2}
                     className="field resize-none"
                   />
-                  <Button className="mt-2 w-full" size="sm" onClick={addText}>Add to canvas</Button>
+                  <Button className="mt-2 w-full" size="sm" onClick={addText} disabled={!ready}>Add to canvas</Button>
                 </div>
                 <div>
                   <label className="label">Typeface</label>

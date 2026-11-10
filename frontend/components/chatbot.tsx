@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
-import { ArrowRight, Bot, MessageCircle, Send, Sparkles, X } from "lucide-react";
+import { ArrowRight, Bot, MessageCircle, Send, Sparkles, Trash2, X } from "lucide-react";
 import { api, errorMessage } from "@/lib/api";
 import type { AssistantReply } from "@/lib/types";
 
@@ -24,9 +24,17 @@ export function Chatbot({ open: openProp, onOpenChange: onOpenChangeProp }: Chat
   const [unreadCount, setUnreadCount] = useState(0);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
+  const openRef = useRef(open);
+
+  useEffect(() => {
+    openRef.current = open;
+    if (open) setUnreadCount(0);
+  }, [open]);
 
   useEffect(() => {
     setOpen(openProp ?? false);
+    openRef.current = openProp ?? false;
+    if (openProp) setUnreadCount(0);
   }, [openProp]);
 
   useEffect(() => {
@@ -35,8 +43,8 @@ export function Chatbot({ open: openProp, onOpenChange: onOpenChangeProp }: Chat
 
   const addMessage = (role: AssistantMessage["role"], content: string) => {
     setMessages((prev) => [...prev, { role, content }]);
-    if (role === "user") {
-      setUnreadCount((c) => c + 1);
+    if (role === "assistant" && !openRef.current) {
+      setUnreadCount((count) => count + 1);
     }
   };
 
@@ -93,7 +101,8 @@ export function Chatbot({ open: openProp, onOpenChange: onOpenChangeProp }: Chat
   const toggleOpen = () => {
     const next = !open;
     setOpen(next);
-    if (!next) setUnreadCount(0);
+    openRef.current = next;
+    if (next) setUnreadCount(0);
     onOpenChangeProp?.(next);
   };
 
@@ -103,7 +112,7 @@ export function Chatbot({ open: openProp, onOpenChange: onOpenChangeProp }: Chat
       <button
         onClick={toggleOpen}
         className={[
-          "flex items-center gap-2 rounded-full bg-ink text-cream px-4 py-2.5 shadow-lg",
+          "relative flex items-center gap-2 rounded-full bg-ink text-cream px-4 py-2.5 shadow-lg",
           open ? "ring-2 ring-clay" : "hover:bg-clay transition",
         ].join(" ")}
         aria-label={open ? "Close chat" : "Open chat"}
@@ -132,13 +141,13 @@ export function Chatbot({ open: openProp, onOpenChange: onOpenChangeProp }: Chat
               </div>
             </div>
             <div className="flex items-center gap-2">
-              <button
-                onClick={clearChat}
-                className="p-1.5 rounded-md text-cream/60 hover:bg-white/10 hover:text-white transition"
-                title="Clear chat"
-              >
-                <X size={14} />
-              </button>
+                <button
+                  onClick={clearChat}
+                  className="p-1.5 rounded-md text-cream/60 hover:bg-white/10 hover:text-white transition"
+                  title="Clear chat"
+                >
+                  <Trash2 size={14} />
+                </button>
               <button
                 onClick={toggleOpen}
                 className="p-1.5 rounded-md text-cream/60 hover:bg-white/10 hover:text-white transition"

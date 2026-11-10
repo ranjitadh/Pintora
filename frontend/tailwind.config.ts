@@ -2,6 +2,7 @@ import type { Config } from "tailwindcss";
 
 const config: Config = {
   content: ["./app/**/*.{ts,tsx}", "./components/**/*.{ts,tsx}", "./lib/**/*.{ts,tsx}"],
+  darkMode: "class",
   theme: {
     extend: {
       colors: {
@@ -29,7 +30,6 @@ const config: Config = {
         card: "0 18px 50px -30px rgba(33,27,22,0.35)",
       },
     },
-    darkMode: "class",
   },
   plugins: [],
 };

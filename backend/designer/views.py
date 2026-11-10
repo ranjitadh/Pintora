@@ -5,6 +5,7 @@ from django.core.files.base import ContentFile
 from PIL import Image
 from rest_framework import status, viewsets
 from rest_framework.decorators import action
+from rest_framework.filters import OrderingFilter, SearchFilter
 from rest_framework.parsers import FormParser, JSONParser, MultiPartParser
 from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response
@@ -85,6 +86,10 @@ class FontViewSet(viewsets.ReadOnlyModelViewSet):
 class DesignViewSet(viewsets.ModelViewSet):
     permission_classes = [IsAuthenticated]
     parser_classes = [JSONParser]
+    filter_backends = [SearchFilter, OrderingFilter]
+    search_fields = ["name"]
+    ordering_fields = ["name", "created_at", "updated_at"]
+    ordering = ["-updated_at"]
 
     def get_queryset(self):
         user = self.request.user

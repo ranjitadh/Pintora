@@ -1,6 +1,6 @@
 import { defineConfig, devices } from "@playwright/test";
 
-const baseURL = process.env.PLAYWRIGHT_BASE_URL || "http://127.0.0.1:3100";
+const baseURL = process.env.PLAYWRIGHT_BASE_URL || "http://127.0.0.1:3000";
 
 export default defineConfig({
   testDir: "./e2e",
@@ -11,7 +11,7 @@ export default defineConfig({
   reporter: [["list"], ["html", { open: "never" }]],
   use: {
     baseURL,
-    trace: "retain-on-failure",
+    trace: "off",
     screenshot: "only-on-failure",
   },
   projects: [
@@ -27,6 +27,12 @@ export default defineConfig({
       url: "http://127.0.0.1:8000/api/health/",
       reuseExistingServer: !process.env.CI,
       timeout: 120_000,
+      env: {
+        THROTTLE_ANON: "5000/min",
+        THROTTLE_USER: "5000/min",
+        THROTTLE_AUTH: "1000/min",
+        THROTTLE_UPLOAD: "1000/hour",
+      },
     },
     {
       command: "npm run dev -- -p 3100",

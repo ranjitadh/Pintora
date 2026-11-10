@@ -9,7 +9,10 @@ test.describe("customer full workflow", () => {
     const failedRequests: string[] = [];
     page.on("pageerror", (error) => pageErrors.push(error.message));
     page.on("requestfailed", (request) => {
-      if (!request.url().includes("/media/")) {
+      if (request.url().includes("/media/")) return;
+      const abortedPrefetch =
+        request.failure()?.errorText === "net::ERR_ABORTED" && request.url().includes("_rsc=");
+      if (!abortedPrefetch) {
         failedRequests.push(`${request.method()} ${request.url()}`);
       }
     });

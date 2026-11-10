@@ -96,8 +96,11 @@ body {
   .field {
     @apply w-full rounded-xl border border-ink/15 bg-white px-4 py-3 text-sm outline-none transition focus:border-clay focus:ring-2 focus:ring-clay/20;
   }
-  .html.dark .field {
-    @apply border-white/20 bg-white/10 text-ink/90;
+  html.dark .field {
+    @apply border-white/20 bg-white/10 text-cream;
+  }
+  html.dark .field::placeholder {
+    color: rgb(251 247 239 / 0.45);
   }
   .label {
     @apply mb-1.5 block text-xs font-semibold uppercase tracking-wider text-muted;
@@ -105,12 +108,259 @@ body {
   .card {
     @apply rounded-3xl border border-ink/10 bg-white shadow-card;
   }
-  .html.dark .card {
-    @apply border-white/20 bg-white/10 text-ink/90;
+  html.dark .card {
+    @apply border-white/15 bg-white/10 text-cream;
+  }
+  html.dark .card .text-ink,
+  html.dark .modal-panel .text-ink {
+    color: var(--fg);
+  }
+  html.dark .card .text-muted,
+  html.dark .modal-panel .text-muted {
+    color: var(--muted);
+  }
+  html.dark .card thead {
+    border-color: rgb(251 247 239 / 0.12);
+    background-color: rgb(255 255 255 / 0.05);
+  }
+  html.dark .card tbody tr {
+    border-color: rgb(251 247 239 / 0.08);
+  }
+  html.dark .card tbody tr:hover {
+    background-color: rgb(255 255 255 / 0.04);
+  }
+  html.dark .modal-panel {
+    background-color: #2a231d;
+    color: var(--fg);
   }
   .link-underline {
     @apply relative after:absolute after:-bottom-1 after:left-0 after:h-px after:w-0 after:bg-current after:transition-all hover:after:w-full;
   }
+  .shop-hero {
+    @apply relative isolate overflow-hidden bg-ink text-cream;
+    min-height: clamp(600px, calc(100svh - 6.25rem), 900px);
+  }
+  .shop-hero-bg {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    object-position: 54% 46%;
+  }
+  .shop-hero-scrim {
+    position: absolute;
+    inset: 0;
+    background:
+      linear-gradient(90deg, rgba(15, 12, 9, 0.94) 0%, rgba(15, 12, 9, 0.78) 46%, rgba(15, 12, 9, 0.22) 100%),
+      linear-gradient(0deg, rgba(15, 12, 9, 0.9) 0%, rgba(15, 12, 9, 0.12) 52%, rgba(15, 12, 9, 0.28) 100%);
+  }
+  .shop-hero-texture {
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    opacity: 0.11;
+    mix-blend-mode: soft-light;
+    background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.55'/%3E%3C/svg%3E");
+  }
+  .shop-hero-inner {
+    position: relative;
+    z-index: 10;
+    display: flex;
+    min-height: inherit;
+    flex-direction: column;
+    justify-content: space-between;
+    gap: 2.5rem;
+    padding-block: 2.5rem;
+  }
+  .shop-hero-card {
+    @apply relative overflow-hidden rounded-2xl border border-cream/20 bg-ink/50 shadow-2xl;
+    aspect-ratio: 16 / 9;
+  }
+  .shop-hero-card img {
+    transition: transform 700ms ease;
+  }
+  .shop-hero-card:hover img {
+    transform: scale(1.035);
+  }
+  .shop-hero-control {
+    @apply flex h-10 w-10 shrink-0 items-center justify-center rounded-full border border-cream/25 bg-ink/30 text-cream backdrop-blur-md transition hover:bg-ink/60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cream/70;
+  }
+  .shop-filter-panel {
+    @apply rounded-3xl border border-ink/10 bg-white/70 p-5 backdrop-blur-sm;
+    box-shadow: 0 18px 45px -34px rgba(33, 27, 22, 0.4);
+  }
+  html.dark .shop-filter-panel {
+    border-color: rgb(251 247 239 / 0.1);
+    background-color: rgb(255 255 255 / 0.04);
+  }
+  @media (min-width: 640px) {
+    .shop-hero-card {
+      width: 16rem;
+      aspect-ratio: 4 / 5;
+    }
+  }
+  @media (max-width: 1023px) {
+    .shop-hero {
+      min-height: clamp(560px, calc(100svh - 7.5rem), 860px);
+    }
+    .shop-hero-inner {
+      gap: 2rem;
+      padding-block: 1.75rem;
+    }
+    .shop-hero-scrim {
+      background:
+        linear-gradient(180deg, rgba(15, 12, 9, 0.88) 0%, rgba(15, 12, 9, 0.44) 42%, rgba(15, 12, 9, 0.92) 100%),
+        linear-gradient(90deg, rgba(15, 12, 9, 0.42) 0%, rgba(15, 12, 9, 0.2) 100%);
+    }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .shop-hero-card img {
+      transition: none;
+    }
+    .shop-hero-card:hover img {
+      transform: none;
+    }
+  }
+}
+
+html.dark select {
+  color-scheme: dark;
+}
+html.dark select option {
+  background-color: #2a231d;
+  color: var(--fg);
+}
+html.dark select:not(.field) {
+  border-color: rgb(251 247 239 / 0.2);
+  background-color: rgb(255 255 255 / 0.1);
+  color: var(--fg);
+}
+html.dark input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="file"]),
+html.dark textarea {
+  color-scheme: dark;
+}
+input[type="search"]::-webkit-search-cancel-button,
+input[type="search"]::-webkit-search-decoration {
+  -webkit-appearance: none;
+  appearance: none;
+}
+
+/* Map the fixed light surfaces/utilities to dark equivalents. The app uses a
+   class-based theme (`html.dark`) with CSS variables for text colours, so the
+   shared light surfaces need explicit dark counterparts. */
+html.dark .bg-cream,
+html.dark .bg-cream\/5,
+html.dark .bg-cream\/90,
+html.dark .bg-cream\/95,
+html.dark .bg-white {
+  background-color: #2a231d;
+}
+html.dark .bg-sand {
+  background-color: #2a231d;
+}
+html.dark .bg-sand\/20,
+html.dark .bg-sand\/30 {
+  background-color: rgb(255 255 255 / 0.04);
+}
+html.dark .bg-sand\/40 {
+  background-color: rgb(255 255 255 / 0.06);
+}
+html.dark .bg-sand\/50 {
+  background-color: rgb(255 255 255 / 0.07);
+}
+html.dark .bg-sand\/60,
+html.dark .bg-sand\/70 {
+  background-color: rgb(255 255 255 / 0.09);
+}
+html.dark .text-ink {
+  color: var(--fg);
+}
+html.dark .text-muted {
+  color: var(--muted);
+}
+
+/* Opacity variants of the fixed ink utility need explicit dark counterparts. */
+html.dark .text-ink\/75 {
+  color: rgb(251 247 239 / 0.75) !important;
+}
+html.dark .text-ink\/70 {
+  color: rgb(251 247 239 / 0.7) !important;
+}
+html.dark .text-ink\/60 {
+  color: rgb(251 247 239 / 0.6) !important;
+}
+html.dark .text-ink\/40 {
+  color: rgb(251 247 239 / 0.4) !important;
+}
+html.dark .text-ink\/25 {
+  color: rgb(251 247 239 / 0.25) !important;
+}
+html.dark .text-ink\/20 {
+  color: rgb(251 247 239 / 0.2) !important;
+}
+html.dark .text-ink\/15 {
+  color: rgb(251 247 239 / 0.15) !important;
+}
+
+html.dark .bg-olive-soft {
+  background-color: var(--olive-soft);
+}
+html.dark .text-olive {
+  color: #a3b18a;
+}
+html.dark .text-olive\/80 {
+  color: rgb(163 177 138 / 0.8);
+}
+html.dark .text-clay {
+  color: #e98a6f;
+}
+html.dark .text-clay-dark {
+  color: #e98a6f;
+}
+html.dark .hover\:text-clay:hover {
+  color: #f0a088;
+}
+html.dark .hover\:text-clay-dark:hover {
+  color: #f0a088;
+}
+
+/* Light borders and subtle dark-ink fills are invisible on dark surfaces. */
+html.dark .border-ink\/5 {
+  border-color: rgb(251 247 239 / 0.08);
+}
+html.dark .border-ink\/10 {
+  border-color: rgb(251 247 239 / 0.12);
+}
+html.dark .border-ink\/15 {
+  border-color: rgb(251 247 239 / 0.16);
+}
+html.dark .border-ink\/20 {
+  border-color: rgb(251 247 239 / 0.2);
+}
+html.dark .border-ink\/30 {
+  border-color: rgb(251 247 239 / 0.28);
+}
+html.dark .border-ink\/40 {
+  border-color: rgb(251 247 239 / 0.36);
+}
+html.dark .bg-ink\/5 {
+  background-color: rgb(255 255 255 / 0.05);
+}
+html.dark .bg-ink\/10 {
+  background-color: rgb(255 255 255 / 0.1);
+}
+html.dark .hover\:bg-ink\/5:hover {
+  background-color: rgb(255 255 255 / 0.06);
+}
+html.dark .hover\:bg-ink\/10:hover {
+  background-color: rgb(255 255 255 / 0.1);
+}
+html.dark .hover\:border-ink:hover {
+  border-color: var(--fg);
+}
+html.dark .hover\:text-ink:hover {
+  color: var(--fg);
 }
 
 .editor-canvas > .canvas-container {
@@ -137,4 +387,63 @@ body {
     linear-gradient(to right, rgba(33, 27, 22, 0.07) 1px, transparent 1px),
     linear-gradient(to bottom, rgba(33, 27, 22, 0.07) 1px, transparent 1px);
   background-size: 24px 24px;
+}
+.home-hero {
+  @apply relative isolate overflow-hidden bg-ink text-cream;
+  min-height: clamp(600px, calc(100svh - 6.25rem), 900px);
+}
+.home-hero-bg {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: 50% 44%;
+}
+.home-hero-scrim {
+  position: absolute;
+  inset: 0;
+  background:
+    linear-gradient(90deg, rgba(15, 12, 9, 0.92) 0%, rgba(15, 12, 9, 0.72) 42%, rgba(15, 12, 9, 0.18) 100%),
+    linear-gradient(0deg, rgba(15, 12, 9, 0.88) 0%, rgba(15, 12, 9, 0.1) 48%, rgba(15, 12, 9, 0.3) 100%);
+}
+.home-hero-texture {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  opacity: 0.1;
+  mix-blend-mode: soft-light;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.5'/%3E%3C/svg%3E");
+}
+.home-hero-inner {
+  position: relative;
+  z-index: 10;
+  display: flex;
+  min-height: inherit;
+  flex-direction: column;
+  justify-content: space-between;
+  gap: 2.5rem;
+  padding-block: 2.5rem;
+}
+.home-hero-control {
+  @apply flex h-10 w-10 shrink-0 items-center justify-center rounded-full border border-cream/25 bg-ink/30 text-cream backdrop-blur-md transition hover:bg-ink/60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cream/70;
+}
+@media (max-width: 1023px) {
+  .home-hero {
+    min-height: clamp(560px, calc(100svh - 7.5rem), 860px);
+  }
+  .home-hero-inner {
+    gap: 2rem;
+    padding-block: 1.75rem;
+  }
+  .home-hero-scrim {
+    background:
+      linear-gradient(180deg, rgba(15, 12, 9, 0.86) 0%, rgba(15, 12, 9, 0.4) 40%, rgba(15, 12, 9, 0.94) 100%),
+      linear-gradient(90deg, rgba(15, 12, 9, 0.4) 0%, rgba(15, 12, 9, 0.16) 100%);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .home-hero-control {
+    display: none;
+  }
 }

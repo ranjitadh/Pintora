@@ -6,11 +6,11 @@ import { useTheme } from "@/lib/theme";
 import { cn } from "@/lib/utils";
 
 export function ThemeToggle({ className }: { className?: string }) {
-  const { theme, setTheme } = useTheme();
+  const { theme, toggleTheme } = useTheme();
 
   return (
     <button
-      onClick={() => setTheme(prev => prev === "light" ? "dark" : "light")}
+      onClick={toggleTheme}
       className={cn(
         "flex items-center gap-2 rounded-full bg-white border border-ink/20 px-2.5 py-1.5 text-xs font-semibold text-ink hover:bg-ink/5 transition",
         className
