@@ -241,7 +241,7 @@ export default function HomePage() {
             <div className="relative">
               <div className="rounded-[2rem] bg-ink p-6 text-cream shadow-card sm:p-8">
                 <div className="flex items-center justify-between border-b border-white/10 pb-4">
-                  <span className="font-mono text-[10px] uppercase tracking-[0.2em] text-cream/60">Printora studio</span>
+                  <span className="font-mono text-[10px] uppercase tracking-[0.2em] text-cream/60">MerchPress studio</span>
                   <span className="flex items-center gap-1.5 text-[10px] text-emerald-300">
                     <span className="h-1.5 w-1.5 rounded-full bg-emerald-300" /> Saved
                   </span>

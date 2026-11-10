@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useParams } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
-import { ArrowLeft, Check, ChevronDown, Palette, Ruler, Sparkles, Truck } from "lucide-react";
+import { ArrowLeft, Check, ChevronDown, Palette, Ruler, Truck } from "lucide-react";
 import { api, mediaUrl } from "@/lib/api";
 import type { Product, Variant } from "@/lib/types";
 import { cn, money } from "@/lib/utils";
@@ -146,7 +146,7 @@ export default function ProductPage() {
         </div>
 
         <div className="lg:pt-4">
-          <p className="eyebrow">{product.category?.name || "Printora studio"}</p>
+          <p className="eyebrow">{product.category?.name || "MerchPress studio"}</p>
           <h1 className="mt-2 font-display text-4xl leading-tight sm:text-5xl">{product.name}</h1>
           <p className="mt-3 text-sm leading-relaxed text-muted">{product.short_description}</p>
 
@@ -231,7 +231,6 @@ export default function ProductPage() {
 
           <div className="mt-8 rounded-2xl bg-sand/60 p-5">
             <div className="flex items-start gap-3">
-              <Sparkles size={18} className="mt-0.5 shrink-0 text-clay" />
               <div>
                 <p className="text-sm font-semibold">This is a customizable product.</p>
                 <p className="mt-1 text-xs leading-relaxed text-muted">
@@ -243,7 +242,7 @@ export default function ProductPage() {
 
           <div className="mt-6">
             <LinkButton href={`/editor/${product.slug}${variantQuery}`} size="lg" className="w-full">
-              Customize this product <Sparkles size={16} />
+              Customize this product
             </LinkButton>
           </div>
 

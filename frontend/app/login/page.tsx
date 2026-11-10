@@ -3,7 +3,7 @@
 import { Suspense, useEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
-import { ArrowRight, Sparkles } from "lucide-react";
+import { ArrowRight } from "lucide-react";
 import { useAuth } from "@/lib/auth";
 import { errorMessage } from "@/lib/api";
 import { Alert, Button } from "@/components/ui";
@@ -60,7 +60,7 @@ function LoginContent() {
         </form>
 
         <p className="mt-6 text-center text-sm text-muted">
-          New to Printora?{" "}
+          New to MerchPress?{" "}
           <Link href={`/register${next ? `?next=${encodeURIComponent(next)}` : ""}`} className="font-semibold text-clay underline">
             Create an account
           </Link>
@@ -72,7 +72,6 @@ function LoginContent() {
       </div>
 
       <div className="hidden overflow-hidden rounded-[2.5rem] bg-ink p-10 text-cream lg:block">
-        <Sparkles className="text-clay" />
         <h2 className="mt-6 font-display text-4xl leading-tight">Make it once.<br />Wear it forever.</h2>
         <p className="mt-5 max-w-sm text-sm leading-relaxed text-cream/60">
           Your saved designs live in your studio account, ready to reorder, remix or share. Every order keeps its

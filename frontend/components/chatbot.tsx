@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
-import { ArrowRight, Bot, MessageCircle, Send, Sparkles, Trash2, X } from "lucide-react";
+import { ArrowRight, Bot, MessageCircle, Send, Trash2, X } from "lucide-react";
 import { api, errorMessage } from "@/lib/api";
 import type { AssistantReply } from "@/lib/types";
 
@@ -117,7 +117,6 @@ export function Chatbot({ open: openProp, onOpenChange: onOpenChangeProp }: Chat
         ].join(" ")}
         aria-label={open ? "Close chat" : "Open chat"}
       >
-        <Sparkles size={16} className="animate-pulse" />
         <span className="text-xs font-semibold uppercase tracking-wider">Assistant</span>
         {unreadCount > 0 && (
           <span className="absolute -top-1 -right-1 h-5 w-5 rounded-full bg-rose-600 text-[9px] font-bold text-white flex items-center justify-center">
@@ -136,7 +135,7 @@ export function Chatbot({ open: openProp, onOpenChange: onOpenChangeProp }: Chat
                 <Bot size={16} />
               </div>
               <div>
-                <h3 className="font-semibold text-sm">Printora Assistant</h3>
+                <h3 className="font-semibold text-sm">MerchPress Assistant</h3>
                 <p className="text-xs text-cream/70">How can I help?</p>
               </div>
             </div>
@@ -163,7 +162,7 @@ export function Chatbot({ open: openProp, onOpenChange: onOpenChangeProp }: Chat
             {messages.length === 0 && (
               <div className="flex flex-col items-center justify-center h-full text-center text-sm text-ink/60">
                 <MessageCircle size={32} className="mx-auto mb-2 opacity-50" />
-                <p>Hi! I'm your Printora assistant.</p>
+                <p>Hi! I'm your MerchPress assistant.</p>
                 <p className="mt-2 text-xs">Ask me about products, orders, pricing, or how to use the editor.</p>
               </div>
             )}
@@ -194,7 +193,6 @@ export function Chatbot({ open: openProp, onOpenChange: onOpenChangeProp }: Chat
             {loading && (
               <div className="flex items-center gap-2 text-sm text-ink/60">
                 <div className="flex h-8 w-8 items-center justify-center rounded-full bg-white text-ink flex-shrink-0">
-                  <Sparkles size={12} className="animate-pulse" />
                 </div>
                 <span className="animate-pulse">Assistant is typing…</span>
               </div>

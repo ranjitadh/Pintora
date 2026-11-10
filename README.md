@@ -1,4 +1,4 @@
-# Printora
+# MerchPress
 
 Print-on-demand storefront with a browser design studio, server-authoritative pricing, order management, production file exports, and a staff admin area.
 

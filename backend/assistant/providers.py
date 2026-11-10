@@ -1,4 +1,4 @@
-"""Provider-agnostic AI client for the Printora Assistant.
+"""Provider-agnostic AI client for the MerchPress Assistant.
 
 Only the backend ever sees ``AI_API_KEY``. Requests are made with the
 already-installed ``requests`` package so no extra dependency is required.

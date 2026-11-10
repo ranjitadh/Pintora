@@ -1,4 +1,4 @@
-# Printora Project Status
+# MerchPress Project Status
 
 Date: 2026-11-10
 Repository: `plugins-web`

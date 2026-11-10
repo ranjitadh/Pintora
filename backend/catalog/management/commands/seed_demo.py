@@ -1,4 +1,4 @@
-"""Seed the Printora demo catalog with original generated assets.
+"""Seed the MerchPress demo catalog with original generated assets.
 
 Everything created here is produced from code (Pillow drawings and Fabric.js
 JSON documents), so the repository does not depend on third-party stock art.
@@ -639,17 +639,17 @@ TEMPLATES = [
 
 
 class Command(BaseCommand):
-    help = "Create the Printora demo catalog, generated mockups, templates, cliparts, and fonts."
+    help = "Create the MerchPress demo catalog, generated mockups, templates, cliparts, and fonts."
 
     def add_arguments(self, parser):
         parser.add_argument("--force", action="store_true", help="Regenerate image assets.")
 
     def handle(self, *args, **options):
         self.force = options["force"]
-        self.stdout.write("Seeding Printora demo data…")
+        self.stdout.write("Seeding MerchPress demo data…")
 
         config = StoreConfiguration.get_solo()
-        config.store_name = "Printora"
+        config.store_name = "MerchPress"
         config.currency = "USD"
         config.tax_rate = Decimal("0")
         config.shipping_fee = Decimal("4.95")
@@ -927,7 +927,7 @@ class Command(BaseCommand):
 
         if not User.objects.filter(email=email).exists():
             User.objects.create_superuser(
-                username=email, email=email, password=password, first_name="Printora", last_name="Admin", role=User.Role.ADMIN
+                username=email, email=email, password=password, first_name="MerchPress", last_name="Admin", role=User.Role.ADMIN
             )
             self.stdout.write(self.style.SUCCESS(f"  Admin account created: {email}"))
         else:

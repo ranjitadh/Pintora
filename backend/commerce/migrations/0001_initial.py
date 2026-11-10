@@ -101,7 +101,7 @@ class Migration(migrations.Migration):
                 ('created_at', models.DateTimeField(auto_now_add=True)),
                 ('updated_at', models.DateTimeField(auto_now=True)),
                 ('id', models.PositiveSmallIntegerField(default=1, editable=False, primary_key=True, serialize=False)),
-                ('store_name', models.CharField(default='Printora', max_length=120)),
+                ('store_name', models.CharField(default='MerchPress', max_length=120)),
                 ('currency', models.CharField(default='USD', max_length=3)),
                 ('tax_rate', models.DecimalField(decimal_places=2, default=0, max_digits=5)),
                 ('shipping_fee', models.DecimalField(decimal_places=2, default=0, max_digits=8)),

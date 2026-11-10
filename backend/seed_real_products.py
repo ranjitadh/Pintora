@@ -1,5 +1,5 @@
 """
-Seed real product images from the Printora product assets zip file.
+Seed real product images from the MerchPress product assets zip file.
 Run with: cd backend && .venv/bin/python seed_real_products.py
 """
 import django
@@ -120,7 +120,7 @@ def main():
         admin_user = User.objects.create_superuser(
             email="admin@printora.local",
             password="change-this-admin-password",
-            first_name="Printora",
+            first_name="MerchPress",
             last_name="Admin",
         )
 

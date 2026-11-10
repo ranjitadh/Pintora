@@ -1,4 +1,4 @@
-"""Deterministic, privacy-safe order answers for the Printora Assistant.
+"""Deterministic, privacy-safe order answers for the MerchPress Assistant.
 
 Private order data is never sent to an AI provider. Order questions are
 answered directly from the database, scoped to the signed-in account only.

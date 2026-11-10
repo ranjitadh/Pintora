@@ -147,7 +147,7 @@ export default function CheckoutPage() {
             <div className="rounded-2xl border border-clay/20 bg-clay/5 p-4">
               <div className="flex items-center gap-2 text-sm font-semibold"><CreditCard size={15} /> Card payment (Stripe)</div>
               <p className="mt-1 text-xs leading-relaxed text-muted">
-                You&rsquo;ll be redirected to Stripe to complete your card payment. No card details are stored by Printora.
+                You&rsquo;ll be redirected to Stripe to complete your card payment. No card details are stored by MerchPress.
               </p>
             </div>
           ) : (

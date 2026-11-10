@@ -1,4 +1,4 @@
-"""Django settings for Printora."""
+"""Django settings for MerchPress."""
 import os
 from datetime import timedelta
 from pathlib import Path
@@ -176,7 +176,7 @@ CELERY_BROKER_URL = os.getenv("CELERY_BROKER_URL", "redis://localhost:6379/0")
 CELERY_RESULT_BACKEND = os.getenv("CELERY_RESULT_BACKEND", "redis://localhost:6379/1")
 CELERY_TASK_ALWAYS_EAGER = env_bool("CELERY_TASK_ALWAYS_EAGER", True)
 
-# Optional AI provider for the Printora Assistant. When no provider/API key is
+# Optional AI provider for the MerchPress Assistant. When no provider/API key is
 # configured the assistant answers from its grounded FAQ knowledge base.
 # Supported providers: "openai" (any OpenAI-compatible chat endpoint) or
 # "anthropic". Keys are read server-side only and never sent to the browser.

@@ -65,7 +65,7 @@ test.describe("product showcase slider", () => {
     expect(pageErrors).toEqual([]);
   });
 
-  test("CTA buttons navigate to valid Printora pages", async ({ page }) => {
+  test("CTA buttons navigate to valid MerchPress pages", async ({ page }) => {
     await expect(page.getByRole("link", { name: /Try the demo/i }).first()).toHaveAttribute("href", "/shop");
 
     await page.getByRole("button", { name: /Go to slide 4/i }).first().click();

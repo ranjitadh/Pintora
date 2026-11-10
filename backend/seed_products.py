@@ -82,7 +82,7 @@ def create_product_image(name, category_color, variant_color, text_label, size=(
         font = ImageFont.load_default()
 
     draw.text((center_x, center_y - 20), text_label, fill=(0, 0, 0), font=font, anchor="mm")
-    draw.text((center_x, center_y + 30), "Printora", fill=(100, 100, 100), font=ImageFont.load_default(), anchor="mm")
+    draw.text((center_x, center_y + 30), "MerchPress", fill=(100, 100, 100), font=ImageFont.load_default(), anchor="mm")
 
     buf = io.BytesIO()
     img.save(buf, format="PNG", quality=95)
@@ -291,7 +291,7 @@ def main():
         admin_user = User.objects.create_superuser(
             email="admin@printora.local",
             password="change-this-admin-password",
-            first_name="Printora",
+            first_name="MerchPress",
             last_name="Admin",
         )
 

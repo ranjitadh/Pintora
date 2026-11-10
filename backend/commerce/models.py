@@ -133,7 +133,7 @@ class OrderItem(TimeStampedModel):
 
 class StoreConfiguration(TimeStampedModel):
     id = models.PositiveSmallIntegerField(primary_key=True, default=1, editable=False)
-    store_name = models.CharField(max_length=120, default="Printora")
+    store_name = models.CharField(max_length=120, default="MerchPress")
     currency = models.CharField(max_length=3, default="USD")
     tax_rate = models.DecimalField(max_digits=5, decimal_places=2, default=0)
     shipping_fee = models.DecimalField(max_digits=8, decimal_places=2, default=0)

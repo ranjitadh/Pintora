@@ -17,7 +17,7 @@ class UserAdmin(BaseUserAdmin):
     search_fields = ("email", "username", "first_name", "last_name")
     ordering = ("email",)
     inlines = [UserProfileInline]
-    fieldsets = BaseUserAdmin.fieldsets + (("Printora", {"fields": ("role",)}),)
+    fieldsets = BaseUserAdmin.fieldsets + (("MerchPress", {"fields": ("role",)}),)
     add_fieldsets = (
         (
             None,

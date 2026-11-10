@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useEffect, useState } from "react";
-import { LogOut, Menu, ShoppingBag, Sparkles, UserRound, X } from "lucide-react";
+import { LogOut, Menu, ShoppingBag, UserRound, X } from "lucide-react";
 import { useAuth } from "@/lib/auth";
 import { api } from "@/lib/api";
 import type { StoreConfig } from "@/lib/types";
@@ -38,9 +38,8 @@ export function SiteHeader() {
         <div className="container-x flex h-16 items-center justify-between gap-4">
           <Link href="/" className="flex items-center gap-2.5">
             <span className="flex h-9 w-9 items-center justify-center rounded-full bg-clay text-white">
-              <Sparkles className="h-4.5 w-4.5" size={18} />
             </span>
-            <span className="font-display text-2xl font-semibold tracking-tight">Printora</span>
+            <span className="font-display text-2xl font-semibold tracking-tight">MerchPress</span>
           </Link>
 
           <nav className="hidden items-center gap-7 md:flex">

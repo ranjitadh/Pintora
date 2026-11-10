@@ -3,7 +3,7 @@
 import { Suspense, useEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
-import { ArrowRight, Sparkles } from "lucide-react";
+import { ArrowRight } from "lucide-react";
 import { useAuth } from "@/lib/auth";
 import { errorMessage } from "@/lib/api";
 import { Alert, Button } from "@/components/ui";
@@ -87,7 +87,6 @@ function RegisterContent() {
       </div>
 
       <div className="hidden overflow-hidden rounded-[2.5rem] bg-clay p-10 text-white lg:block">
-        <Sparkles />
         <h2 className="mt-6 font-display text-4xl leading-tight">Your ideas,<br />kept safe.</h2>
         <p className="mt-5 max-w-sm text-sm leading-relaxed text-white/70">
           Every canvas version, uploaded asset and print file stays attached to your account. Come back and remix any

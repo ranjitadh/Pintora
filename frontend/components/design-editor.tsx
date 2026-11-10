@@ -24,7 +24,6 @@ import {
   Save,
   Shapes,
   ShoppingBag,
-  Sparkles,
   Square,
   Trash2,
   Triangle,
@@ -1666,7 +1665,7 @@ export function DesignEditor({
 
           <div className="mx-3 mb-2 flex flex-wrap items-center justify-between gap-2 rounded-xl bg-olive-soft px-3 py-2 text-[11px] text-olive sm:mx-4">
             <span className="hidden items-center gap-2 sm:flex">
-              <Sparkles size={14} /> Every stage exports as a production-ready file.
+              Every stage exports as a production-ready file.
             </span>
             <span className="font-semibold">{saving ? "Saving…" : dirty ? "Unsaved changes" : "All changes saved"}</span>
           </div>

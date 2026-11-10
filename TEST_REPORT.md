@@ -1,4 +1,4 @@
-# Printora Test Report
+# MerchPress Test Report
 
 ## Session 2026-11-10 — Current verification
 
@@ -118,7 +118,7 @@ Result: **15 passed, 2 skipped** (admin dashboard test skipped because `E2E_ADMI
 - Initial showcase renders slider, category tabs and vertical navigation
 - Switching product categories updates the preview, mockup and right-side content
 - Vertical slide navigation updates the right-side content
-- CTA buttons navigate to valid Printora pages
+- CTA buttons navigate to valid MerchPress pages
 - Mobile layout stacks content and keeps the slider usable
 
 ## Dependency audit

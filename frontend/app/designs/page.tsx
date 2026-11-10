@@ -13,19 +13,19 @@ function firstValue(value: string | string[] | undefined) {
 
 export const metadata: Metadata = {
   metadataBase: new URL(SITE_URL),
-  title: "Your designs · Printora",
+  title: "Your designs · MerchPress",
   description:
     "Your saved design library. Open, duplicate, download or delete any canvas — every design is versioned and ready for print.",
   alternates: { canonical: "/designs" },
   openGraph: {
-    title: "Your designs · Printora",
+    title: "Your designs · MerchPress",
     description: "Your saved design library. Open, duplicate, download or delete any canvas.",
     url: "/designs",
     type: "website",
   },
   twitter: {
     card: "summary",
-    title: "Your designs · Printora",
+    title: "Your designs · MerchPress",
     description: "Your saved design library.",
   },
 };

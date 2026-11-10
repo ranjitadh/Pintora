@@ -33,7 +33,7 @@ class ProductionApiTests(TempMediaTestCase):
                 },
                 {
                     "type": "text", "originX": "center", "originY": "center",
-                    "left": 300, "top": 520, "text": "Printora", "fontSize": 64,
+                    "left": 300, "top": 520, "text": "MerchPress", "fontSize": 64,
                     "fontFamily": "Inter", "fontWeight": "bold", "fill": "#111111",
                     "angle": 0, "opacity": 1, "scaleX": 1, "scaleY": 1,
                 },

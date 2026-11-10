@@ -1,4 +1,4 @@
-# Printora Fix Log
+# MerchPress Fix Log
 
 Date: 2026-11-07
 

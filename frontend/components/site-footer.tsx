@@ -1,5 +1,4 @@
 import Link from "next/link";
-import { Sparkles } from "lucide-react";
 
 export function SiteFooter() {
   return (
@@ -8,9 +7,8 @@ export function SiteFooter() {
         <div className="max-w-xs">
           <div className="flex items-center gap-2.5">
             <span className="flex h-9 w-9 items-center justify-center rounded-full bg-clay text-white">
-              <Sparkles size={18} />
             </span>
-            <span className="font-display text-2xl">Printora</span>
+            <span className="font-display text-2xl">MerchPress</span>
           </div>
           <p className="mt-4 text-sm leading-relaxed text-muted">
             Design it. Customize it. Make it yours. Studio-quality custom products, printed and shipped from our
@@ -48,7 +46,7 @@ export function SiteFooter() {
       </div>
       <div className="border-t border-ink/10">
         <div className="container-x flex flex-col items-center justify-between gap-2 py-5 text-xs text-muted sm:flex-row">
-          <span>© {new Date().getFullYear()} Printora. All rights reserved.</span>
+          <span>© {new Date().getFullYear()} MerchPress. All rights reserved.</span>
           <span className="font-mono text-[10px] uppercase tracking-[0.2em]">Design · Print · Deliver</span>
         </div>
       </div>

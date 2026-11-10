@@ -20,12 +20,12 @@ export const metadata: Metadata = {
   metadataBase: new URL(SITE_URL),
   title: "Shop custom-printed apparel, decor & gifts",
   description:
-    "Browse premium blanks chosen for print — apparel, totes, drinkware and home goods. Personalize any piece in the Printora studio and we print it in small batches.",
+    "Browse premium blanks chosen for print — apparel, totes, drinkware and home goods. Personalize any piece in the MerchPress studio and we print it in small batches.",
   alternates: { canonical: "/shop" },
   openGraph: {
-    title: "Shop custom-printed apparel, decor & gifts · Printora",
+    title: "Shop custom-printed apparel, decor & gifts · MerchPress",
     description:
-      "Premium blanks chosen for print, finished by hand in small batches. Design your piece in the Printora studio.",
+      "Premium blanks chosen for print, finished by hand in small batches. Design your piece in the MerchPress studio.",
     url: "/shop",
     type: "website",
     images: [
@@ -33,13 +33,13 @@ export const metadata: Metadata = {
         url: "/studio/shop-studio.jpg",
         width: 1800,
         height: 1199,
-        alt: "An artist hand-painting lettering onto a T-shirt in the Printora studio",
+        alt: "An artist hand-painting lettering onto a T-shirt in the MerchPress studio",
       },
     ],
   },
   twitter: {
     card: "summary_large_image",
-    title: "Shop custom-printed apparel, decor & gifts · Printora",
+    title: "Shop custom-printed apparel, decor & gifts · MerchPress",
     description: "Premium blanks chosen for print, finished by hand in small batches.",
     images: ["/studio/shop-studio.jpg"],
   },
@@ -90,7 +90,7 @@ export default async function ShopPage({
       ? {
           "@context": "https://schema.org",
           "@type": "ItemList",
-          name: "Printora shop",
+          name: "MerchPress shop",
           url: `${SITE_URL}/shop`,
           numberOfItems: initialProducts.length,
           itemListElement: initialProducts.map((product, index) => ({

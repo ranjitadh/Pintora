@@ -1,4 +1,4 @@
-# Printora — Project Plan
+# MerchPress — Project Plan
 
 ## 1. Goal
 

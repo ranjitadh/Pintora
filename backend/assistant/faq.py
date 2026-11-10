@@ -1,4 +1,4 @@
-"""Grounded store knowledge for the Printora Assistant.
+"""Grounded store knowledge for the MerchPress Assistant.
 
 The assistant must never invent store facts or private data. When no AI
 credentials are configured, replies come from these entries and live
@@ -135,7 +135,7 @@ def _faq_entries(config):
             ],
             "question": "Which printing methods are available?",
             "answer": (
-                "Printora uses direct-to-garment, embroidery, sublimation and UV "
+                "MerchPress uses direct-to-garment, embroidery, sublimation and UV "
                 "printing. Available methods depend on the product and are listed on "
                 "each product page and in the design studio."
             ),
@@ -149,7 +149,7 @@ def _faq_entries(config):
             ],
             "question": "What products can I customize?",
             "answer": (
-                "Printora personalizes apparel, accessories, home and living pieces, "
+                "MerchPress personalizes apparel, accessories, home and living pieces, "
                 "and wall art. Browse the full catalog in the shop; every product page "
                 "links into the design studio with its real print areas."
             ),
@@ -162,7 +162,7 @@ def _faq_entries(config):
             ],
             "question": "How is pricing calculated?",
             "answer": (
-                "All prices and quantity discounts are calculated by the Printora "
+                "All prices and quantity discounts are calculated by the MerchPress "
                 "server and shown live in the editor and cart. The cart total includes "
                 "tax and shipping based on the current store settings, so the quote and "
                 "checkout always agree."
@@ -223,9 +223,9 @@ def _faq_entries(config):
                 "sustainability", "sustainable", "environment", "eco", "packaging",
                 "waste", "overproduction",
             ],
-            "question": "How does Printora reduce waste?",
+            "question": "How does MerchPress reduce waste?",
             "answer": (
-                "Printora prints on demand, so products are made only after an order is "
+                "MerchPress prints on demand, so products are made only after an order is "
                 "placed. We use premium blanks, recycle packaging where possible and "
                 "avoid mass-produced inventory."
             ),
@@ -235,7 +235,7 @@ def _faq_entries(config):
             "keywords": ["hello", "hi", "hey", "good morning", "good afternoon", "good evening"],
             "question": "Greeting",
             "answer": (
-                "Hi! I'm the Printora Assistant. I can help with products, the design "
+                "Hi! I'm the MerchPress Assistant. I can help with products, the design "
                 "studio, shipping, returns and order questions. What are you working on?"
             ),
         },
@@ -285,13 +285,13 @@ def store_facts(config=None):
 def build_system_prompt(config=None):
     config = config or StoreConfiguration.get_solo()
     return (
-        "You are Printora Assistant, the friendly support assistant for Printora, "
+        "You are MerchPress Assistant, the friendly support assistant for MerchPress, "
         "a print-on-demand storefront with a browser design studio.\n\n"
         "GROUNDED STORE FACTS (authoritative; never contradict or extend them):\n"
         f"Store name: {config.store_name}. Currency: {config.currency}.\n"
         f"{store_facts(config)}\n\n"
         "RULES:\n"
-        "1. Answer only questions about Printora products, the design studio, "
+        "1. Answer only questions about MerchPress products, the design studio, "
         "shipping, returns, payments, accounts and store policies.\n"
         "2. Never invent order numbers, tracking numbers, delivery dates, prices, "
         "discounts, customer details or policy details. You do not have access to "

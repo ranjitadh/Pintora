@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useEffect, useState } from "react";
-import { LayoutDashboard, LogOut, Palette, Package, Settings, Sparkles } from "lucide-react";
+import { LayoutDashboard, LogOut, Palette, Package, Settings } from "lucide-react";
 import { api, errorMessage } from "@/lib/api";
 import { useAuth } from "@/lib/auth";
 import { Alert, Button, Field, LinkButton, LoadingBlock } from "@/components/ui";
@@ -141,9 +141,6 @@ export default function AccountPage() {
               </div>
             </Link>
           ))}
-          <div className="rounded-2xl bg-olive-soft p-5 text-xs leading-relaxed text-olive">
-            <Sparkles size={16} />
-          </div>
         </aside>
       </div>
     </div>

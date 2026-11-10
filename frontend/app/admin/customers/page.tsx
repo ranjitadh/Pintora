@@ -81,7 +81,7 @@ export default function AdminCustomersPage() {
       <AdminHeader
         breadcrumbs={[{ label: "Commerce", href: "/admin" }, { label: "Customers" }]}
         title="Customers"
-        description="People with a Printora account, their designs and order history."
+        description="People with a MerchPress account, their designs and order history."
         actions={<Badge className="bg-ink/5 text-muted">{count} customers</Badge>}
       />
       {error && <Alert>{error}</Alert>}

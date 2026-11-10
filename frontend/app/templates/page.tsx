@@ -17,10 +17,10 @@ export const metadata: Metadata = {
   metadataBase: new URL(SITE_URL),
   title: "Design templates for custom apparel, decor & gifts",
   description:
-    "Start with an artist-made template, then remix the colours, type and layout in the Printora studio. Free starting points for tees, hoodies, totes, posters and mugs.",
+    "Start with an artist-made template, then remix the colours, type and layout in the MerchPress studio. Free starting points for tees, hoodies, totes, posters and mugs.",
   alternates: { canonical: "/templates" },
   openGraph: {
-    title: "Design templates for custom apparel, decor & gifts · Printora",
+    title: "Design templates for custom apparel, decor & gifts · MerchPress",
     description:
       "Artist-made starting points for every canvas. Pick a layout and make it entirely yours in the studio.",
     url: "/templates",
@@ -30,13 +30,13 @@ export const metadata: Metadata = {
         url: "/studio/shop-studio.jpg",
         width: 1800,
         height: 1199,
-        alt: "An artist hand-painting lettering onto a T-shirt in the Printora studio",
+        alt: "An artist hand-painting lettering onto a T-shirt in the MerchPress studio",
       },
     ],
   },
   twitter: {
     card: "summary_large_image",
-    title: "Design templates for custom apparel, decor & gifts · Printora",
+    title: "Design templates for custom apparel, decor & gifts · MerchPress",
     description: "Artist-made starting points for every canvas. Make one yours in the studio.",
     images: ["/studio/shop-studio.jpg"],
   },
@@ -74,7 +74,7 @@ export default async function TemplatesPage({
       ? {
           "@context": "https://schema.org",
           "@type": "ItemList",
-          name: "Printora template library",
+          name: "MerchPress template library",
           url: `${SITE_URL}/templates`,
           numberOfItems: initialTemplates.length,
           itemListElement: initialTemplates.map((template, index) => ({

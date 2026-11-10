@@ -13,7 +13,7 @@ class DesignerApiTests(TempMediaTestCase):
         self.other = make_user(email="other@example.com")
         self.client.force_authenticate(self.user)
 
-    def _create_design(self, text="Hello Printora"):
+    def _create_design(self, text="Hello MerchPress"):
         response = self.client.post(
             "/api/designs/",
             {

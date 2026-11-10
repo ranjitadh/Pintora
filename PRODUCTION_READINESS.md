@@ -1,4 +1,4 @@
-# Printora Production Readiness
+# MerchPress Production Readiness
 
 Date: 2026-11-07
 

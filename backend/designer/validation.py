@@ -115,11 +115,11 @@ def _validate_image_src(src):
     netloc = _normalize_host(parsed.netloc)
     netloc_host = netloc.split(":")[0] if netloc else ""
     if parsed.scheme not in ("http", "https") or not netloc:
-        raise DesignValidationError("Images must reference an uploaded Printora asset.")
+        raise DesignValidationError("Images must reference an uploaded MerchPress asset.")
     if netloc not in allowed_hosts and netloc_host not in allowed_hosts:
-        raise DesignValidationError("Images must reference an uploaded Printora asset.")
+        raise DesignValidationError("Images must reference an uploaded MerchPress asset.")
     if not parsed.path.startswith(media_prefix) and "/media/" not in parsed.path:
-        raise DesignValidationError("Images must reference an uploaded Printora asset.")
+        raise DesignValidationError("Images must reference an uploaded MerchPress asset.")
 
 
 def validate_canvas(canvas, *, allow_stage_map=True):

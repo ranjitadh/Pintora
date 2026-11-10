@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useEffect, useMemo, useRef, useState } from "react";
-import { ArrowRight, ArrowUpRight, Search, Sparkles, X } from "lucide-react";
+import { ArrowRight, ArrowUpRight, Search, X } from "lucide-react";
 import { api, mediaUrl } from "@/lib/api";
 import type { Template } from "@/lib/types";
 import { LinkButton } from "@/components/ui";
@@ -62,7 +62,6 @@ function TemplateCard({ template }: { template: Template }) {
           />
         ) : (
           <div className="flex h-full w-full flex-col items-center justify-center gap-2 text-ink/20">
-            <Sparkles size={36} />
             <span className="font-display text-lg">{template.name}</span>
           </div>
         )}
@@ -303,7 +302,6 @@ export function TemplatesContent({
                       />
                     ) : (
                       <div className="flex h-full items-center justify-center text-ink/20">
-                        <Sparkles size={48} />
                       </div>
                     )}
                     <span className="absolute left-3 top-3 rounded-full bg-cream/90 px-3 py-1 font-mono text-[9px] uppercase tracking-[0.16em] text-ink">
@@ -418,7 +416,6 @@ export function TemplatesContent({
           ) : visible.length === 0 ? (
             <div className="rounded-3xl border border-dashed border-ink/20 bg-white px-5 py-16 text-center">
               <span className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-clay/10 text-clay">
-                <Sparkles size={22} />
               </span>
               <h3 className="mt-4 font-display text-2xl">
                 {loadError

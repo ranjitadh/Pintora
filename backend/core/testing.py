@@ -1,4 +1,4 @@
-"""Shared helpers for the Printora backend test suite."""
+"""Shared helpers for the MerchPress backend test suite."""
 import shutil
 import tempfile
 from decimal import Decimal

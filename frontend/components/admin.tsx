@@ -99,7 +99,7 @@ export function AdminSidebar({ className }: AdminSidebarProps) {
         <Store size={18} />
       </span>
       <span>
-        <span className="block font-display text-xl leading-none">Printora</span>
+        <span className="block font-display text-xl leading-none">MerchPress</span>
         <span className="text-[10px] uppercase tracking-[0.18em] text-muted dark:text-cream/50">Studio admin</span>
       </span>
     </Link>

@@ -1,4 +1,4 @@
-# Printora Bug Audit
+# MerchPress Bug Audit
 
 Date: 2026-11-07
 

@@ -2,8 +2,8 @@ import type { Metadata } from "next";
 
 export const metadata: Metadata = {
   title: {
-    default: "Studio — Printora",
-    template: "%s · Studio · Printora",
+    default: "Studio — MerchPress",
+    template: "%s · Studio · MerchPress",
   },
 };
 

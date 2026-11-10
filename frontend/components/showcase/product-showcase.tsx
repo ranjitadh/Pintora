@@ -12,7 +12,6 @@ import {
   PackageCheck,
   Printer,
   ShoppingBag,
-  Sparkles,
   Truck,
 } from "lucide-react";
 import { BeforeAfterSlider } from "./before-after-slider";
@@ -20,7 +19,7 @@ import { ColorPicker } from "./color-picker";
 import { ImageTint } from "./color-picker";
 import { SHOWCASE_CATEGORIES, SHOWCASE_COLORS, SHOWCASE_SLIDES, ShowcaseCategory, ShowcaseSlide } from "./data";
 
-const FEATURE_ICONS: any[] = [Check, Layers, Sparkles, ArrowRight, PackageCheck, Printer, ShoppingBag, Truck];
+const FEATURE_ICONS: any[] = [Check, Layers, ArrowRight, PackageCheck, Printer, ShoppingBag, Truck];
 
 export function ProductShowcase() {
   const [products, setProducts] = useState<ProductListItem[]>([]);
@@ -175,7 +174,7 @@ function ContentColumn({ currentSlide, mounted }: { currentSlide: ShowcaseSlide;
   return (
     <div key={currentSlide.index} className="transition-opacity duration-500 space-y-6">
       <span className="inline-flex items-center gap-2 rounded-full border border-clay/30 bg-clay/5 px-3 py-1.5 font-mono text-[10px] uppercase tracking-[0.2em] text-clay">
-        <Sparkles size={12} /> {currentSlide.badge}
+        {currentSlide.badge}
       </span>
       <h2 className="font-display text-3xl sm:text-4xl leading-tight">
         {currentSlide.heading.text}{" "}
