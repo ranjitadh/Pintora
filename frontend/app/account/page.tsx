@@ -143,8 +143,6 @@ export default function AccountPage() {
           ))}
           <div className="rounded-2xl bg-olive-soft p-5 text-xs leading-relaxed text-olive">
             <Sparkles size={16} />
-            <p className="mt-2 font-semibold">Studio member</p>
-            <p className="mt-1 text-olive/80">Every design save creates a restorable version. Your print files stay attached to your orders.</p>
           </div>
         </aside>
       </div>
