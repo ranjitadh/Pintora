@@ -4,6 +4,7 @@ import Link from "next/link";
 import {
   useCallback,
   useEffect,
+  useRef,
   useState,
 } from "react";
 import {
@@ -59,21 +60,24 @@ export function DesignsContent({
   const [totalPages, setTotalPages] = useState(0);
   const [page, setPage] = useState(initialPage);
   const [search, setSearch] = useState(initialSearch);
+  const [debouncedSearch, setDebouncedSearch] = useState(initialSearch);
   const [sort, setSort] = useState(initialSort);
   const [ordering, setOrdering] = useState(
     SORT_OPTIONS.find((s) => s.value === initialSort)?.ordering || "-updated_at"
   );
   const [loading, setLoading] = useState(true);
+  const [searching, setSearching] = useState(false);
   const [error, setError] = useState("");
   const [busy, setBusy] = useState<string | null>(null);
   const [deleteTarget, setDeleteTarget] = useState<Design | null>(null);
   const [exporting, setExporting] = useState<string | null>(null);
   const [exportError, setExportError] = useState("");
+  const searchTimeout = useRef<number | undefined>(undefined);
 
   // Sync UI state to the shareable URL.
   useEffect(() => {
     const params = new URLSearchParams();
-    if (search) params.set("search", search);
+    if (debouncedSearch) params.set("search", debouncedSearch);
     if (sort !== "newest") params.set("sort", sort);
     if (page > 1) params.set("page", String(page));
     const query = params.toString();
@@ -82,7 +86,20 @@ export function DesignsContent({
       "",
       `${window.location.pathname}${query ? `?${query}` : ""}`
     );
-  }, [search, sort, page]);
+  }, [debouncedSearch, sort, page]);
+
+  // Debounce search input so we don't hit the API on every keystroke.
+  useEffect(() => {
+    if (searchTimeout.current) window.clearTimeout(searchTimeout.current);
+    setSearching(true);
+    searchTimeout.current = window.setTimeout(() => {
+      setDebouncedSearch(search);
+      setSearching(false);
+    }, 300);
+    return () => {
+      if (searchTimeout.current) window.clearTimeout(searchTimeout.current);
+    };
+  }, [search]);
 
   const loadDesigns = useCallback(
     async (pageNum: number) => {
@@ -94,7 +111,7 @@ export function DesignsContent({
           page_size: String(PAGE_SIZE),
           ordering,
         });
-        if (search.trim()) params.set("search", search.trim());
+        if (debouncedSearch.trim()) params.set("search", debouncedSearch.trim());
         const data = await api.get<Paginated<Design>>(
           `/designs/?${params.toString()}`
         );
@@ -108,7 +125,7 @@ export function DesignsContent({
         setLoading(false);
       }
     },
-    [search, ordering]
+    [debouncedSearch, ordering]
   );
 
   // Load when user, auth state, search, sort, or page changes.
@@ -119,7 +136,7 @@ export function DesignsContent({
       return;
     }
     loadDesigns(1);
-  }, [user, authLoading, search, sort, page, loadDesigns]);
+  }, [user, authLoading, debouncedSearch, sort, page, loadDesigns]);
 
   const duplicate = async (design: Design) => {
     setBusy(design.id);
@@ -333,7 +350,7 @@ export function DesignsContent({
         <>
           <div className="mt-8 flex items-center justify-between gap-3">
             <p className="text-sm text-muted" aria-live="polite">
-              {visibleCount} design{visibleCount === 1 ? "" : "s"}
+              {searching ? "Searching…" : `${visibleCount} design${visibleCount === 1 ? "" : "s"}`}
             </p>
             {totalPages > 1 && (
               <div className="flex items-center gap-3 text-sm text-muted">

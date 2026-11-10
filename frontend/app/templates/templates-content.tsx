@@ -106,12 +106,15 @@ export function TemplatesContent({
 }: TemplatesContentProps) {
   const [templates, setTemplates] = useState(initialTemplates);
   const [search, setSearch] = useState(initialSearch);
+  const [debouncedSearch, setDebouncedSearch] = useState(initialSearch);
   const [category, setCategory] = useState(() =>
     normalizeCategory(initialCategory, initialTemplates)
   );
   const [loading, setLoading] = useState(!initialLoaded);
+  const [searching, setSearching] = useState(false);
   const [loadError, setLoadError] = useState(false);
   const requested = useRef(initialLoaded);
+  const searchTimeout = useRef<number | undefined>(undefined);
 
   useEffect(() => {
     if (requested.current) return;
@@ -127,13 +130,26 @@ export function TemplatesContent({
       .finally(() => setLoading(false));
   }, []);
 
+  // Debounce search input so we don't re-filter on every keystroke.
+  useEffect(() => {
+    if (searchTimeout.current) window.clearTimeout(searchTimeout.current);
+    setSearching(true);
+    searchTimeout.current = window.setTimeout(() => {
+      setDebouncedSearch(search);
+      setSearching(false);
+    }, 300);
+    return () => {
+      if (searchTimeout.current) window.clearTimeout(searchTimeout.current);
+    };
+  }, [search]);
+
   useEffect(() => {
     const params = new URLSearchParams();
     if (category && category !== ALL) params.set("category", category);
-    if (search.trim()) params.set("search", search.trim());
+    if (debouncedSearch.trim()) params.set("search", debouncedSearch.trim());
     const query = params.toString();
     window.history.replaceState(null, "", `${window.location.pathname}${query ? `?${query}` : ""}`);
-  }, [category, search]);
+  }, [category, debouncedSearch]);
 
   const categoryCounts = useMemo(() => {
     const counts: Record<string, number> = {};
@@ -154,7 +170,7 @@ export function TemplatesContent({
       : categories.find((item) => item.toLowerCase() === category.toLowerCase()) || category;
 
   const visible = useMemo(() => {
-    const query = search.trim().toLowerCase();
+    const query = debouncedSearch.trim().toLowerCase();
     return templates.filter((template) => {
       const matchesCategory =
         category.toLowerCase() === ALL.toLowerCase() ||
@@ -173,7 +189,7 @@ export function TemplatesContent({
         .toLowerCase()
         .includes(query);
     });
-  }, [category, search, templates]);
+  }, [category, debouncedSearch, templates]);
 
   const filtersActive = Boolean(search.trim()) || category.toLowerCase() !== ALL.toLowerCase();
   const canvasCount = useMemo(
@@ -195,7 +211,9 @@ export function TemplatesContent({
 
   const resultText = loading
     ? "Curating…"
-    : `${visible.length} template${visible.length === 1 ? "" : "s"}`;
+    : searching
+      ? "Searching…"
+      : `${visible.length} template${visible.length === 1 ? "" : "s"}`;
 
   return (
     <div className="pb-12 lg:pb-16">
