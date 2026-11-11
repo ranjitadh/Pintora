@@ -4,15 +4,32 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
+  AlignCenter,
+  AlignCenterHorizontal,
+  AlignCenterVertical,
+  AlignEndHorizontal,
+  AlignEndVertical,
+  AlignLeft,
+  AlignRight,
+  AlignStartHorizontal,
+  AlignStartVertical,
+  ArrowDownToLine,
   ArrowLeft,
   ArrowRight,
+  ArrowUpToLine,
+  CaseUpper,
   ChevronRight,
   Circle,
+  Copy,
+  Eye,
+  EyeOff,
   Grid,
   Image as ImageIcon,
   Layers,
   Layout,
   Loader2,
+  Lock,
+  LockOpen,
   Maximize,
   Minimize,
   Minus,
@@ -22,6 +39,7 @@ import {
   RotateCcw,
   RotateCw,
   Save,
+  Search,
   Shapes,
   ShoppingBag,
   Square,
@@ -69,6 +87,12 @@ const TOOL_ITEMS: { id: Tool; label: string; icon: any }[] = [
   { id: "layers", label: "Layers", icon: Layers },
 ];
 
+const FALLBACK_FONTS = [
+  { id: "inter", name: "Inter", family: "Inter" },
+  { id: "lora", name: "Lora", family: "Lora" },
+  { id: "mono", name: "Space Mono", family: "Space Mono" },
+] as FontResource[];
+
 function blankCanvas(area: any) {
   return {
     version: "5.3.0",
@@ -76,6 +100,10 @@ function blankCanvas(area: any) {
     height: area?.height_px || 1000,
     objects: [],
   };
+}
+
+function isTextObject(object: any) {
+  return !!object && ["i-text", "text", "textbox"].includes(object.type);
 }
 
 function normalizeTextStyles(objects: any[]) {
@@ -185,6 +213,14 @@ export function DesignEditor({
   const workspaceRef = useRef<HTMLDivElement | null>(null);
   const [workspaceSize, setWorkspaceSize] = useState({ width: 0, height: 0 });
 
+  const [opacity, setOpacity] = useState(100);
+  const [textAlign, setTextAlign] = useState<"left" | "center" | "right">("center");
+  const [charSpacing, setCharSpacing] = useState(0);
+  const [lineHeight, setLineHeight] = useState(1);
+  const [fontQuery, setFontQuery] = useState("");
+  const [clipartQuery, setClipartQuery] = useState("");
+  const [contextMenu, setContextMenu] = useState<{ x: number; y: number } | null>(null);
+
   const activeStage = useMemo(
     () => product.stages.find((stage) => stage.id === activeStageId) || product.stages[0],
     [product.stages, activeStageId]
@@ -257,6 +293,10 @@ export function DesignEditor({
       if (obj.fontSize) setFontSize(obj.fontSize);
       if (typeof obj.fontWeight !== "undefined") setBold(obj.fontWeight === "bold" || Number(obj.fontWeight) >= 600);
       if (obj.fontStyle) setItalic(obj.fontStyle === "italic");
+      if (typeof obj.opacity === "number") setOpacity(Math.round(obj.opacity * 100));
+      if (obj.textAlign) setTextAlign(obj.textAlign);
+      if (typeof obj.charSpacing === "number") setCharSpacing(obj.charSpacing);
+      if (typeof obj.lineHeight === "number") setLineHeight(obj.lineHeight);
     }
   }, []);
 
@@ -443,6 +483,24 @@ export function DesignEditor({
           setDirty(true);
           refreshLayers();
         });
+        canvas.on("mouse:down", (opt: any) => {
+          const native = opt.e as MouseEvent;
+          if (native && native.button === 2) {
+            const target = opt.target;
+            if (target) {
+              canvas.setActiveObject(target);
+              canvas.requestRenderAll();
+              setSelected(target);
+              const x = Math.min(native.clientX, window.innerWidth - 220);
+              const y = Math.min(native.clientY, window.innerHeight - 320);
+              setContextMenu({ x, y });
+            } else {
+              setContextMenu(null);
+            }
+            return;
+          }
+          setContextMenu(null);
+        });
       })
       .catch(() => setError("The design engine failed to load. Please refresh the page."));
 
@@ -606,7 +664,9 @@ export function DesignEditor({
       fontWeight: bold ? "bold" : "normal",
       fontStyle: italic ? "italic" : "normal",
       fill: color,
-      textAlign: "center",
+      textAlign,
+      charSpacing,
+      lineHeight,
     });
     canvas.add(object);
     canvas.setActiveObject(object);
@@ -799,6 +859,131 @@ export function DesignEditor({
     pushHistory();
   };
 
+  const applyTextProp = (props: Record<string, any>) => {
+    const canvas = fabricRef.current;
+    if (!canvas) return;
+    const objects = canvas.getActiveObjects().filter(isTextObject);
+    if (!objects.length) return;
+    objects.forEach((object: any) => object.set(props));
+    canvas.requestRenderAll();
+    pushHistory();
+  };
+
+  const alignSelected = (edge: "left" | "center" | "right" | "top" | "middle" | "bottom") => {
+    const canvas = fabricRef.current;
+    if (!canvas || !activeArea) return;
+    const object = canvas.getActiveObject();
+    if (!object) return;
+    object.setCoords();
+    const rect = object.getBoundingRect(true, true);
+    let dx = 0;
+    let dy = 0;
+    if (edge === "left") dx = -rect.left;
+    if (edge === "center") dx = (activeArea.width_px - rect.width) / 2 - rect.left;
+    if (edge === "right") dx = activeArea.width_px - rect.width - rect.left;
+    if (edge === "top") dy = -rect.top;
+    if (edge === "middle") dy = (activeArea.height_px - rect.height) / 2 - rect.top;
+    if (edge === "bottom") dy = activeArea.height_px - rect.height - rect.top;
+    object.set({ left: (object.left || 0) + dx, top: (object.top || 0) + dy });
+    object.setCoords();
+    canvas.requestRenderAll();
+    pushHistory();
+  };
+
+  const changeOpacity = (value: number) => {
+    setOpacity(value);
+    const canvas = fabricRef.current;
+    const object = canvas?.getActiveObject();
+    if (!canvas || !object) return;
+    object.set({ opacity: value / 100 });
+    canvas.requestRenderAll();
+    pushHistory();
+  };
+
+  const changeTextAlign = (value: "left" | "center" | "right") => {
+    setTextAlign(value);
+    applyTextProp({ textAlign: value });
+  };
+
+  const changeCharSpacing = (value: number) => {
+    setCharSpacing(value);
+    applyTextProp({ charSpacing: value });
+  };
+
+  const changeLineHeight = (value: number) => {
+    setLineHeight(value);
+    applyTextProp({ lineHeight: value });
+  };
+
+  const toggleUppercase = () => {
+    const canvas = fabricRef.current;
+    if (!canvas) return;
+    const objects = canvas.getActiveObjects().filter(isTextObject);
+    if (!objects.length) return;
+    objects.forEach((object: any) => {
+      if (!object.__originalText) object.__originalText = object.text || "";
+      const original = object.__originalText as string;
+      const isUpper = (object.text || "") === original.toUpperCase();
+      object.set("text", isUpper ? original : original.toUpperCase());
+    });
+    canvas.requestRenderAll();
+    pushHistory();
+  };
+
+  const bringToFront = () => {
+    const canvas = fabricRef.current;
+    const object = canvas?.getActiveObject();
+    if (!canvas || !object) return;
+    canvas.bringToFront(object);
+    canvas.requestRenderAll();
+    pushHistory();
+  };
+
+  const sendToBack = () => {
+    const canvas = fabricRef.current;
+    const object = canvas?.getActiveObject();
+    if (!canvas || !object) return;
+    canvas.sendToBack(object);
+    canvas.requestRenderAll();
+    pushHistory();
+  };
+
+  const toggleLayerVisibility = (object: any) => {
+    const canvas = fabricRef.current;
+    if (!canvas) return;
+    const nextVisible = object.visible === false;
+    object.set("visible", nextVisible);
+    if (!nextVisible && canvas.getActiveObject() === object) {
+      canvas.discardActiveObject();
+      setSelected(null);
+    }
+    canvas.requestRenderAll();
+    pushHistory();
+  };
+
+  const toggleLayerLock = (object: any) => {
+    const canvas = fabricRef.current;
+    if (!canvas) return;
+    const nextSelectable = object.selectable === false;
+    object.set({ selectable: nextSelectable, evented: nextSelectable });
+    if (!nextSelectable && canvas.getActiveObject() === object) {
+      canvas.discardActiveObject();
+      setSelected(null);
+    }
+    canvas.requestRenderAll();
+    pushHistory();
+  };
+
+  const nudgeSelected = (dx: number, dy: number) => {
+    const canvas = fabricRef.current;
+    const object = canvas?.getActiveObject();
+    if (!canvas || !object || object.type === "activeSelection") return;
+    object.set({ left: (object.left || 0) + dx, top: (object.top || 0) + dy });
+    object.setCoords();
+    canvas.requestRenderAll();
+    pushHistory();
+  };
+
   const undo = () => {
     const state = stageStates.current[activeStageRef.current];
     if (!state || state.undo.length < 2) return;
@@ -948,11 +1133,118 @@ export function DesignEditor({
     }
   };
 
+  const shortcutRef = useRef({ undo, redo, deleteSelected, duplicateSelected, nudgeSelected, save });
+  useEffect(() => {
+    shortcutRef.current = { undo, redo, deleteSelected, duplicateSelected, nudgeSelected, save };
+  });
+
+  useEffect(() => {
+    const handler = (event: KeyboardEvent) => {
+      const target = event.target as HTMLElement | null;
+      if (target) {
+        const tag = target.tagName;
+        if (tag === "INPUT" || tag === "TEXTAREA" || tag === "SELECT" || target.isContentEditable) return;
+      }
+      const canvas = fabricRef.current;
+      if (!canvas) return;
+      const active = canvas.getActiveObject() as any;
+      if (active?.isEditing) return;
+      const meta = event.metaKey || event.ctrlKey;
+      const key = event.key;
+      if (meta && key.toLowerCase() === "s") {
+        event.preventDefault();
+        shortcutRef.current.save(false);
+        return;
+      }
+      if (meta && key.toLowerCase() === "z") {
+        event.preventDefault();
+        if (event.shiftKey) shortcutRef.current.redo();
+        else shortcutRef.current.undo();
+        return;
+      }
+      if (meta && key.toLowerCase() === "y") {
+        event.preventDefault();
+        shortcutRef.current.redo();
+        return;
+      }
+      if (meta && key.toLowerCase() === "d") {
+        event.preventDefault();
+        shortcutRef.current.duplicateSelected();
+        return;
+      }
+      if (key === "Delete" || key === "Backspace") {
+        if (active) {
+          event.preventDefault();
+          shortcutRef.current.deleteSelected();
+        }
+        return;
+      }
+      if (key === "Escape") {
+        canvas.discardActiveObject();
+        canvas.requestRenderAll();
+        setSelected(null);
+        setContextMenu(null);
+        setPanMode(false);
+        setShowMockupPreview(false);
+        return;
+      }
+      if (active && key.startsWith("Arrow")) {
+        event.preventDefault();
+        const step = event.shiftKey ? 10 : 1;
+        if (key === "ArrowLeft") shortcutRef.current.nudgeSelected(-step, 0);
+        if (key === "ArrowRight") shortcutRef.current.nudgeSelected(step, 0);
+        if (key === "ArrowUp") shortcutRef.current.nudgeSelected(0, -step);
+        if (key === "ArrowDown") shortcutRef.current.nudgeSelected(0, step);
+        return;
+      }
+      if (!meta && (key === "+" || key === "=")) {
+        event.preventDefault();
+        setZoom((value) => Math.min(3, Math.max(0.5, Math.round((value + 0.1) * 100) / 100)));
+      }
+      if (!meta && key === "-") {
+        event.preventDefault();
+        setZoom((value) => Math.min(3, Math.max(0.5, Math.round((value - 0.1) * 100) / 100)));
+      }
+    };
+    window.addEventListener("keydown", handler);
+    return () => window.removeEventListener("keydown", handler);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  useEffect(() => {
+    const element = workspaceRef.current;
+    if (!element) return;
+    const onWheel = (event: WheelEvent) => {
+      if (!event.ctrlKey && !event.metaKey) return;
+      event.preventDefault();
+      setZoom((value) => Math.min(3, Math.max(0.5, Math.round((value - event.deltaY * 0.002) * 100) / 100)));
+    };
+    element.addEventListener("wheel", onWheel, { passive: false });
+    return () => element.removeEventListener("wheel", onWheel);
+  }, []);
+
+  useEffect(() => {
+    if (!contextMenu) return;
+    const close = () => setContextMenu(null);
+    window.addEventListener("pointerdown", close);
+    return () => window.removeEventListener("pointerdown", close);
+  }, [contextMenu]);
+
   const clipartCategories = useMemo(
     () => ["All", ...Array.from(new Set(cliparts.map((item) => item.category)))],
     [cliparts]
   );
-  const visibleCliparts = cliparts.filter((item) => clipartFilter === "All" || item.category === clipartFilter);
+  const visibleCliparts = cliparts.filter((item) => {
+    const matchesCategory = clipartFilter === "All" || item.category === clipartFilter;
+    const query = clipartQuery.trim().toLowerCase();
+    const matchesQuery =
+      !query || `${item.name} ${item.category} ${(item.tags || []).join(" ")}`.toLowerCase().includes(query);
+    return matchesCategory && matchesQuery;
+  });
+  const fontList = (fonts.length ? fonts : FALLBACK_FONTS).filter((font) => {
+    const query = fontQuery.trim().toLowerCase();
+    return !query || `${font.name} ${font.family}`.toLowerCase().includes(query);
+  });
   const relevantTemplates = templates.filter((item) => !item.product_slug || item.product_slug === product.slug);
   const templateList = relevantTemplates.length ? relevantTemplates : templates;
 
@@ -1045,6 +1337,15 @@ export function DesignEditor({
             aria-label={showMockupPreview ? "Exit mockup preview" : "Mockup preview"}
           >
             {showMockupPreview ? <Minimize size={15} /> : <Maximize size={15} />}
+          </button>
+          <button
+            onClick={() => save(false)}
+            disabled={!ready || saving}
+            className="hidden h-9 w-9 items-center justify-center rounded-lg border border-ink/15 bg-white hover:bg-ink/5 disabled:cursor-not-allowed disabled:opacity-40 sm:flex"
+            title="Save design"
+            aria-label="Save design"
+          >
+            {saving ? <Loader2 size={15} className="animate-spin" /> : <Save size={15} />}
           </button>
 
           <button
@@ -1283,15 +1584,17 @@ export function DesignEditor({
                 </div>
                 <div>
                   <label className="label">Typeface</label>
-                  <div className="grid grid-cols-1 gap-1.5">
-                    {(fonts.length
-                      ? fonts
-                      : ([
-                          { id: "inter", name: "Inter", family: "Inter" },
-                          { id: "lora", name: "Lora", family: "Lora" },
-                          { id: "mono", name: "Space Mono", family: "Space Mono" },
-                        ] as FontResource[])
-                    ).map((font) => (
+                  <div className="relative mb-2">
+                    <Search size={13} className="pointer-events-none absolute left-2.5 top-1/2 -translate-y-1/2 text-muted" />
+                    <input
+                      value={fontQuery}
+                      onChange={(event) => setFontQuery(event.target.value)}
+                      placeholder="Search fonts"
+                      className="field h-9 pl-8 text-xs"
+                    />
+                  </div>
+                  <div className="grid max-h-52 grid-cols-1 gap-1.5 overflow-y-auto pr-0.5">
+                    {fontList.map((font) => (
                       <button
                         key={font.id}
                         onClick={() => changeFont(font.family)}
@@ -1305,20 +1608,56 @@ export function DesignEditor({
                         <span className="text-[10px] text-muted">{font.family}</span>
                       </button>
                     ))}
+                    {fontList.length === 0 && <p className="text-[11px] text-muted">No fonts match “{fontQuery}”.</p>}
                   </div>
                 </div>
-                <div className="grid grid-cols-2 gap-2">
+                <div>
+                  <label className="label">Alignment</label>
+                  <div className="grid grid-cols-3 gap-1.5">
+                    {([
+                      { value: "left" as const, icon: AlignLeft, label: "Align text left" },
+                      { value: "center" as const, icon: AlignCenter, label: "Align text center" },
+                      { value: "right" as const, icon: AlignRight, label: "Align text right" },
+                    ]).map((item) => (
+                      <button
+                        key={item.value}
+                        onClick={() => changeTextAlign(item.value)}
+                        className={cn(
+                          "flex items-center justify-center rounded-lg border py-2",
+                          textAlign === item.value ? "border-ink bg-ink text-cream" : "border-ink/10 hover:border-ink/30"
+                        )}
+                        aria-label={item.label}
+                        title={item.label}
+                      >
+                        <item.icon size={14} />
+                      </button>
+                    ))}
+                  </div>
+                </div>
+                <div className="grid grid-cols-3 gap-2">
                   <button
                     onClick={() => toggleStyle("fontWeight")}
                     className={cn("rounded-lg border py-2 text-sm font-bold", bold ? "border-ink bg-ink text-cream" : "border-ink/10")}
+                    aria-label="Bold"
+                    title="Bold"
                   >
                     B
                   </button>
                   <button
                     onClick={() => toggleStyle("fontStyle")}
                     className={cn("rounded-lg border py-2 text-sm italic", italic ? "border-ink bg-ink text-cream" : "border-ink/10")}
+                    aria-label="Italic"
+                    title="Italic"
                   >
                     I
+                  </button>
+                  <button
+                    onClick={toggleUppercase}
+                    className="flex items-center justify-center rounded-lg border border-ink/10 py-2 hover:border-ink/30"
+                    aria-label="Toggle uppercase"
+                    title="Uppercase"
+                  >
+                    <CaseUpper size={14} />
                   </button>
                 </div>
                 <div>
@@ -1329,6 +1668,30 @@ export function DesignEditor({
                     max={Math.max(400, Math.round((activeArea?.width_px || 1200) * 0.35))}
                     value={fontSize}
                     onChange={(event) => changeFontSize(Number(event.target.value))}
+                    className="w-full accent-clay"
+                  />
+                </div>
+                <div>
+                  <label className="label">Letter spacing · {charSpacing}</label>
+                  <input
+                    type="range"
+                    min={-50}
+                    max={300}
+                    step={10}
+                    value={charSpacing}
+                    onChange={(event) => changeCharSpacing(Number(event.target.value))}
+                    className="w-full accent-clay"
+                  />
+                </div>
+                <div>
+                  <label className="label">Line height · {lineHeight.toFixed(1)}</label>
+                  <input
+                    type="range"
+                    min={0.8}
+                    max={2}
+                    step={0.1}
+                    value={lineHeight}
+                    onChange={(event) => changeLineHeight(Number(event.target.value))}
                     className="w-full accent-clay"
                   />
                 </div>
@@ -1368,6 +1731,15 @@ export function DesignEditor({
                 <div>
                   <label className="label">Clipart library</label>
                   <p className="text-[11px] text-muted">Click any image to add it to the current print area.</p>
+                </div>
+                <div className="relative">
+                  <Search size={13} className="pointer-events-none absolute left-2.5 top-1/2 -translate-y-1/2 text-muted" />
+                  <input
+                    value={clipartQuery}
+                    onChange={(event) => setClipartQuery(event.target.value)}
+                    placeholder="Search clipart"
+                    className="field h-9 pl-8 text-xs"
+                  />
                 </div>
                 <div className="flex flex-wrap gap-1.5">
                   {clipartCategories.map((category) => (
@@ -1438,33 +1810,55 @@ export function DesignEditor({
                 </div>
                 <div className="space-y-1">
                   {layers.map((object, index) => (
-                    <button
+                    <div
                       key={`${object.type}-${index}`}
-                      onClick={() => {
-                        const canvas = fabricRef.current;
-                        canvas?.setActiveObject(object);
-                        canvas?.requestRenderAll();
-                        refreshLayers();
-                      }}
                       className={cn(
-                        "flex w-full items-center justify-between gap-2 rounded-lg border px-2.5 py-2 text-left text-xs",
+                        "flex w-full items-center gap-1 rounded-lg border px-2 py-1.5 text-left text-xs",
                         selected === object ? "border-clay bg-clay/5" : "border-ink/10 hover:border-ink/30"
                       )}
                     >
-                      <span className="truncate">
-                        <span className="font-semibold capitalize">{object.type?.replace("-", " ")}</span>
-                        {object.text ? ` · ${String(object.text).slice(0, 22)}` : object.name ? ` · ${object.name}` : ""}
-                      </span>
-                      <span className="text-[9px] uppercase text-muted">{index === 0 ? "top" : ""}</span>
-                    </button>
+                      <button
+                        onClick={() => {
+                          const canvas = fabricRef.current;
+                          canvas?.setActiveObject(object);
+                          canvas?.requestRenderAll();
+                          refreshLayers();
+                        }}
+                        className="flex min-w-0 flex-1 items-center justify-between gap-2 py-0.5 text-left"
+                      >
+                        <span className="truncate">
+                          <span className="font-semibold capitalize">{object.type?.replace("-", " ")}</span>
+                          {object.text ? ` · ${String(object.text).slice(0, 22)}` : object.name ? ` · ${object.name}` : ""}
+                        </span>
+                        <span className="text-[9px] uppercase text-muted">{index === 0 ? "top" : ""}</span>
+                      </button>
+                      <button
+                        onClick={() => toggleLayerVisibility(object)}
+                        className="flex h-6 w-6 shrink-0 items-center justify-center rounded hover:bg-ink/10"
+                        aria-label={object.visible === false ? "Show layer" : "Hide layer"}
+                        title={object.visible === false ? "Show layer" : "Hide layer"}
+                      >
+                        {object.visible === false ? <EyeOff size={12} /> : <Eye size={12} />}
+                      </button>
+                      <button
+                        onClick={() => toggleLayerLock(object)}
+                        className="flex h-6 w-6 shrink-0 items-center justify-center rounded hover:bg-ink/10"
+                        aria-label={object.selectable === false ? "Unlock layer" : "Lock layer"}
+                        title={object.selectable === false ? "Unlock layer" : "Lock layer"}
+                      >
+                        {object.selectable === false ? <Lock size={12} /> : <LockOpen size={12} />}
+                      </button>
+                    </div>
                   ))}
                   {layers.length === 0 && <p className="text-[11px] text-muted">Your canvas is empty. Add text or art to begin.</p>}
                 </div>
                 {selected && (
-                  <div className="grid grid-cols-3 gap-1.5 border-t border-ink/10 pt-3">
+                  <div className="grid grid-cols-2 gap-1.5 border-t border-ink/10 pt-3">
+                    <button onClick={bringToFront} className="rounded-lg border border-ink/10 py-2 text-[10px] font-semibold hover:border-ink">To front</button>
+                    <button onClick={sendToBack} className="rounded-lg border border-ink/10 py-2 text-[10px] font-semibold hover:border-ink">To back</button>
                     <button onClick={() => moveLayer("up")} className="rounded-lg border border-ink/10 py-2 text-[10px] font-semibold hover:border-ink">Forward</button>
                     <button onClick={() => moveLayer("down")} className="rounded-lg border border-ink/10 py-2 text-[10px] font-semibold hover:border-ink">Backward</button>
-                    <button onClick={duplicateSelected} className="rounded-lg border border-ink/10 py-2 text-[10px] font-semibold hover:border-ink">Duplicate</button>
+                    <button onClick={duplicateSelected} className="col-span-2 rounded-lg border border-ink/10 py-2 text-[10px] font-semibold hover:border-ink">Duplicate</button>
                   </div>
                 )}
               </div>
@@ -1490,6 +1884,20 @@ export function DesignEditor({
               <Button variant="outline" size="sm" onClick={() => addShape("circle")} title="Circle"><Circle size={14} /></Button>
               <Button variant="outline" size="sm" onClick={() => addShape("triangle")} title="Triangle"><Triangle size={14} /></Button>
             </div>
+            {selected && (
+              <div className="mt-3">
+                <label className="label">Opacity · {opacity}%</label>
+                <input
+                  type="range"
+                  min={0}
+                  max={100}
+                  value={opacity}
+                  onChange={(event) => changeOpacity(Number(event.target.value))}
+                  className="w-full accent-clay"
+                  aria-label="Layer opacity"
+                />
+              </div>
+            )}
             {selected && (
               <div className="mt-3 grid grid-cols-3 gap-1">
                 <Button variant="outline" size="sm" onClick={makeBigger}><Maximize size={13} /> Bigger</Button>
@@ -1562,6 +1970,79 @@ export function DesignEditor({
           >
             <div className="pointer-events-none absolute inset-0 h-full w-full bg-[repeating-conic-gradient(#efe7d9_0_25%,#f7f1e7_0_50%)] bg-[length:24px_24px]" />
 
+            {selected && !showMockupPreview && !panMode && (
+              <div
+                data-editor-controls
+                className="absolute left-1/2 top-3 z-40 flex -translate-x-1/2 items-center gap-0.5 rounded-full border border-ink/15 bg-white/95 p-1 shadow-lg"
+              >
+                <button
+                  onClick={() => alignSelected("left")}
+                  className="flex h-8 w-8 items-center justify-center rounded-full hover:bg-ink/5"
+                  aria-label="Align left"
+                  title="Align left"
+                >
+                  <AlignStartVertical size={14} />
+                </button>
+                <button
+                  onClick={() => alignSelected("center")}
+                  className="flex h-8 w-8 items-center justify-center rounded-full hover:bg-ink/5"
+                  aria-label="Center horizontally"
+                  title="Center horizontally"
+                >
+                  <AlignCenterVertical size={14} />
+                </button>
+                <button
+                  onClick={() => alignSelected("right")}
+                  className="flex h-8 w-8 items-center justify-center rounded-full hover:bg-ink/5"
+                  aria-label="Align right"
+                  title="Align right"
+                >
+                  <AlignEndVertical size={14} />
+                </button>
+                <button
+                  onClick={() => alignSelected("top")}
+                  className="flex h-8 w-8 items-center justify-center rounded-full hover:bg-ink/5"
+                  aria-label="Align top"
+                  title="Align top"
+                >
+                  <AlignStartHorizontal size={14} />
+                </button>
+                <button
+                  onClick={() => alignSelected("middle")}
+                  className="flex h-8 w-8 items-center justify-center rounded-full hover:bg-ink/5"
+                  aria-label="Center vertically"
+                  title="Center vertically"
+                >
+                  <AlignCenterHorizontal size={14} />
+                </button>
+                <button
+                  onClick={() => alignSelected("bottom")}
+                  className="flex h-8 w-8 items-center justify-center rounded-full hover:bg-ink/5"
+                  aria-label="Align bottom"
+                  title="Align bottom"
+                >
+                  <AlignEndHorizontal size={14} />
+                </button>
+                <div className="mx-0.5 h-5 w-px bg-ink/10" />
+                <button
+                  onClick={duplicateSelected}
+                  className="flex h-8 w-8 items-center justify-center rounded-full hover:bg-ink/5"
+                  aria-label="Duplicate selection"
+                  title="Duplicate"
+                >
+                  <Copy size={14} />
+                </button>
+                <button
+                  onClick={deleteSelected}
+                  className="flex h-8 w-8 items-center justify-center rounded-full text-rose-600 hover:bg-rose-50"
+                  aria-label="Delete selection"
+                  title="Delete"
+                >
+                  <Trash2 size={14} />
+                </button>
+              </div>
+            )}
+
             <div className="absolute inset-0 flex items-center justify-center p-3 sm:p-6">
               <div
                 className="relative shrink-0 will-change-transform"
@@ -1596,6 +2077,28 @@ export function DesignEditor({
                       data-testid="print-boundary"
                       className="pointer-events-none absolute inset-0 z-20 border border-dashed border-clay/70"
                     />
+                  )}
+                  {!showMockupPreview && layers.length === 0 && (
+                    <div className="pointer-events-none absolute inset-0 z-30 flex flex-col items-center justify-center gap-1.5 px-4 text-center">
+                      <p className="font-display text-sm font-semibold text-ink/70">Your print area is empty</p>
+                      <p className="max-w-[220px] text-[10px] leading-relaxed text-muted">
+                        Add text, upload artwork, or drop in a template to start designing.
+                      </p>
+                      <div className="pointer-events-auto mt-1 flex items-center gap-1.5">
+                        <button
+                          onClick={() => selectTool("text")}
+                          className="rounded-full border border-ink/15 bg-white/95 px-3 py-1.5 text-[10px] font-semibold hover:border-ink"
+                        >
+                          Start typing
+                        </button>
+                        <button
+                          onClick={() => selectTool("upload")}
+                          className="rounded-full border border-ink/15 bg-white/95 px-3 py-1.5 text-[10px] font-semibold hover:border-ink"
+                        >
+                          Upload art
+                        </button>
+                      </div>
+                    </div>
                   )}
                 </div>
               </div>
@@ -1657,7 +2160,7 @@ export function DesignEditor({
           </div>
 
           <div className="flex flex-wrap items-center justify-between gap-2 px-4 py-2 text-[11px] text-muted">
-            <span>Drag to move · corners to scale · double-click text to edit · Alt-drag to pan</span>
+            <span>Drag to move · Alt-drag to pan · ⌘/Ctrl+Z undo · Del remove · ⌘/Ctrl+scroll to zoom</span>
             <span className="hidden sm:inline">
               {activePrintArea ? `${activePrintArea.export_width_px} × ${activePrintArea.export_height_px}px @ ${activePrintArea.export_dpi} DPI` : ""}
             </span>
@@ -1822,6 +2325,63 @@ export function DesignEditor({
           </div>
         </aside>
       </div>
+
+      {contextMenu && (
+        <div
+          className="fixed z-[120] w-52 overflow-hidden rounded-xl border border-ink/10 bg-white py-1 shadow-2xl"
+          style={{ left: contextMenu.x, top: contextMenu.y }}
+          onPointerDown={(event) => event.stopPropagation()}
+        >
+          <button
+            onClick={() => {
+              duplicateSelected();
+              setContextMenu(null);
+            }}
+            className="flex w-full items-center gap-2.5 px-3 py-2 text-left text-xs hover:bg-ink/5"
+          >
+            <Copy size={13} /> Duplicate
+          </button>
+          <button
+            onClick={() => {
+              bringToFront();
+              setContextMenu(null);
+            }}
+            className="flex w-full items-center gap-2.5 px-3 py-2 text-left text-xs hover:bg-ink/5"
+          >
+            <ArrowUpToLine size={13} /> Bring to front
+          </button>
+          <button
+            onClick={() => {
+              sendToBack();
+              setContextMenu(null);
+            }}
+            className="flex w-full items-center gap-2.5 px-3 py-2 text-left text-xs hover:bg-ink/5"
+          >
+            <ArrowDownToLine size={13} /> Send to back
+          </button>
+          <div className="my-1 h-px bg-ink/10" />
+          <button
+            onClick={() => {
+              alignSelected("center");
+              alignSelected("middle");
+              setContextMenu(null);
+            }}
+            className="flex w-full items-center gap-2.5 px-3 py-2 text-left text-xs hover:bg-ink/5"
+          >
+            <AlignCenter size={13} /> Center on print area
+          </button>
+          <div className="my-1 h-px bg-ink/10" />
+          <button
+            onClick={() => {
+              deleteSelected();
+              setContextMenu(null);
+            }}
+            className="flex w-full items-center gap-2.5 px-3 py-2 text-left text-xs text-rose-600 hover:bg-rose-50"
+          >
+            <Trash2 size={13} /> Delete
+          </button>
+        </div>
+      )}
 
       {/* Bottom Toolbar (Mobile) */}
       <div className="flex h-14 shrink-0 items-center justify-between gap-2 border-t border-ink/10 bg-cream px-2 xl:hidden">
