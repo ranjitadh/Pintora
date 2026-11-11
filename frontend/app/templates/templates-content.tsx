@@ -143,6 +143,14 @@ export function TemplatesContent({
     };
   }, [search]);
 
+  useEffect(() => {
+    const params = new URLSearchParams();
+    if (category && category.toLowerCase() !== ALL.toLowerCase()) params.set("category", category);
+    if (debouncedSearch.trim()) params.set("search", debouncedSearch.trim());
+    const query = params.toString();
+    window.history.replaceState(null, "", `${window.location.pathname}${query ? `?${query}` : ""}`);
+  }, [category, debouncedSearch]);
+
   const categoryCounts = useMemo(() => {
     const counts: Record<string, number> = {};
     for (const template of templates) {
@@ -155,8 +163,6 @@ export function TemplatesContent({
     () => Object.keys(categoryCounts).sort((a, b) => a.localeCompare(b)),
     [categoryCounts]
   );
-
-
 
   const visible = useMemo(() => {
     const query = debouncedSearch.trim().toLowerCase();
