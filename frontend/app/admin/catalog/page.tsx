@@ -1,12 +1,12 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
-import { ImagePlus, Plus, Shapes, Trash2, Type } from "lucide-react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { ArrowDown, ImagePlus, Plus, Search, Shapes, Trash2, Type, X } from "lucide-react";
 import { api, errorMessage, mediaUrl } from "@/lib/api";
 import { AdminHeader, AdminTabs } from "@/components/admin";
 import { Alert, Badge, Button, Field, LoadingBlock, Modal } from "@/components/ui";
 import type { Paginated } from "@/lib/types";
-import { formatDate, money, titleCase } from "@/lib/utils";
+import { cn, formatDate, money, titleCase } from "@/lib/utils";
 
 type Tab = "templates" | "cliparts" | "fonts";
 
@@ -113,6 +113,13 @@ export default function AdminCatalogPage() {
   const [error, setError] = useState("");
   const [notice, setNotice] = useState("");
 
+  const [search, setSearch] = useState("");
+  const [debouncedSearch, setDebouncedSearch] = useState("");
+  const [showSuggestions, setShowSuggestions] = useState(false);
+  const [highlightedIndex, setHighlightedIndex] = useState(-1);
+  const searchTimeout = useRef<number | undefined>(undefined);
+  const searchInputRef = useRef<HTMLInputElement>(null);
+
   const [templateOpen, setTemplateOpen] = useState(false);
   const [templateForm, setTemplateForm] = useState(BLANK_TEMPLATE);
   const [templateFile, setTemplateFile] = useState<File | null>(null);
@@ -149,6 +156,18 @@ export default function AdminCatalogPage() {
   }, []);
 
   useEffect(() => { loadAll(); }, [loadAll]);
+
+  // Debounce search input so we don't re-filter on every keystroke.
+  useEffect(() => {
+    if (searchTimeout.current) window.clearTimeout(searchTimeout.current);
+    setShowSuggestions(search.trim().length > 0);
+    searchTimeout.current = window.setTimeout(() => {
+      setDebouncedSearch(search);
+    }, 250);
+    return () => {
+      if (searchTimeout.current) window.clearTimeout(searchTimeout.current);
+    };
+  }, [search]);
 
   const flash = (message: string) => {
     setNotice(message);
@@ -279,6 +298,68 @@ export default function AdminCatalogPage() {
     }
   };
 
+  // Filtered data per tab based on debounced search.
+  const filteredTemplates = useMemo(() => {
+    const q = debouncedSearch.trim().toLowerCase();
+    if (!q) return templates;
+    return templates.filter((t) =>
+      [t.name, t.category, t.description, ...(t.tags || [])]
+        .join(" ")
+        .toLowerCase()
+        .includes(q)
+    );
+  }, [debouncedSearch, templates]);
+
+  const filteredCliparts = useMemo(() => {
+    const q = debouncedSearch.trim().toLowerCase();
+    if (!q) return cliparts;
+    return cliparts.filter((c) =>
+      [c.name, c.category, ...(c.tags || [])]
+        .join(" ")
+        .toLowerCase()
+        .includes(q)
+    );
+  }, [debouncedSearch, cliparts]);
+
+  const filteredFonts = useMemo(() => {
+    const q = debouncedSearch.trim().toLowerCase();
+    if (!q) return fonts;
+    return fonts.filter((f) =>
+      [f.name, f.family, f.weight, f.style]
+        .join(" ")
+        .toLowerCase()
+        .includes(q)
+    );
+  }, [debouncedSearch, fonts]);
+
+  // Top matching suggestions for the dropdown.
+  const suggestions = useMemo(() => {
+    const q = debouncedSearch.trim().toLowerCase();
+    if (!q) return [];
+    const matches: { id: string; name: string; type: string }[] = [];
+    for (const t of templates) {
+      if ([t.name, t.category, ...(t.tags || [])].join(" ").toLowerCase().includes(q))
+        matches.push({ id: t.id, name: t.name, type: "Template" });
+    }
+    for (const c of cliparts) {
+      if ([c.name, c.category, ...(c.tags || [])].join(" ").toLowerCase().includes(q))
+        matches.push({ id: c.id, name: c.name, type: "Clipart" });
+    }
+    for (const f of fonts) {
+      if ([f.name, f.family].join(" ").toLowerCase().includes(q))
+        matches.push({ id: f.id, name: f.name, type: "Font" });
+    }
+    return matches.slice(0, 8);
+  }, [debouncedSearch, templates, cliparts, fonts]);
+
+  const clearSearch = () => {
+    setSearch("");
+    setDebouncedSearch("");
+    setShowSuggestions(false);
+    setHighlightedIndex(-1);
+    if (searchInputRef.current) searchInputRef.current.focus();
+  };
+
   if (loading) return <LoadingBlock label="Loading the design library…" />;
 
   const tabLabels: Record<Tab, { label: string; action: () => void; icon: React.ElementType }> = {
@@ -305,16 +386,76 @@ export default function AdminCatalogPage() {
         active={tab}
         onChange={setTab}
         tabs={[
-          { id: "templates", label: "Templates", count: templates.length },
-          { id: "cliparts", label: "Clipart", count: cliparts.length },
-          { id: "fonts", label: "Fonts", count: fonts.length },
+          { id: "templates", label: "Templates", count: filteredTemplates.length },
+          { id: "cliparts", label: "Clipart", count: filteredCliparts.length },
+          { id: "fonts", label: "Fonts", count: filteredFonts.length },
         ]}
       />
 
+      <div className="relative w-full max-w-md">
+        <label htmlFor="admin-catalog-search" className="sr-only">
+          Search catalog
+        </label>
+        <div className="relative">
+          <Search
+            size={15}
+            className="pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 text-muted"
+          />
+          <input
+            id="admin-catalog-search"
+            ref={searchInputRef}
+            type="search"
+            value={search}
+            onChange={(event) => setSearch(event.target.value)}
+            onBlur={() => setShowSuggestions(false)}
+            onFocus={() => (debouncedSearch.trim().length > 0 ? setShowSuggestions(true) : false)}
+            placeholder="Search templates, clipart, fonts…"
+            aria-label="Search catalog"
+            className="field pl-10 pr-10"
+          />
+          {search && (
+            <button
+              type="button"
+              onClick={clearSearch}
+              className="absolute right-3 top-1/2 -translate-y-1/2 rounded-full p-1 text-muted hover:bg-ink/10 hover:text-ink"
+              aria-label="Clear search"
+            >
+              <X size={14} />
+            </button>
+          )}
+        </div>
+        {showSuggestions && suggestions.length > 0 && (
+          <div className="absolute z-20 mt-1 w-full rounded-xl border border-ink/10 bg-white shadow-lg">
+            {suggestions.map((item, index) => (
+              <button
+                key={item.id}
+                type="button"
+                onClick={() => {
+                  setSearch(item.name);
+                  setDebouncedSearch(item.name);
+                  setShowSuggestions(false);
+                  setHighlightedIndex(-1);
+                }}
+                onMouseEnter={() => setHighlightedIndex(index)}
+                className={cn(
+                  "flex items-center gap-3 px-3 py-2 text-sm transition",
+                  highlightedIndex === index ? "bg-ink/5" : "bg-white hover:bg-ink/5"
+                )}
+              >
+                <span className="text-xs font-medium text-ink">{item.name}</span>
+                <span className="ml-auto text-[10px] text-muted uppercase tracking-wider">
+                  {item.type}
+                </span>
+              </button>
+            ))}
+          </div>
+        )}
+      </div>
+
       {tab === "templates" && (
         <div className="grid gap-5 sm:grid-cols-2 xl:grid-cols-3">
-          {templates.length === 0 && <p className="text-sm text-muted">No templates yet.</p>}
-          {templates.map((template) => (
+          {filteredTemplates.length === 0 && <p className="text-sm text-muted">No templates yet.</p>}
+          {filteredTemplates.map((template) => (
             <div key={template.id} className="card overflow-hidden">
               <div className="relative aspect-[4/3] bg-sand">
                 {template.preview_url ? <img src={mediaUrl(template.preview_url)} alt={template.name} className="h-full w-full object-cover" /> : <div className="flex h-full items-center justify-center"><Shapes size={24} className="text-muted" /></div>}
@@ -339,8 +480,8 @@ export default function AdminCatalogPage() {
 
       {tab === "cliparts" && (
         <div className="grid gap-4 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5">
-          {cliparts.length === 0 && <p className="text-sm text-muted">No clipart yet.</p>}
-          {cliparts.map((clipart) => (
+          {filteredCliparts.length === 0 && <p className="text-sm text-muted">No clipart yet.</p>}
+          {filteredCliparts.map((clipart) => (
             <div key={clipart.id} className="card overflow-hidden">
               <div className="aspect-square bg-white p-3">
                 <img src={mediaUrl(clipart.image_url)} alt={clipart.name} className="h-full w-full object-contain" />
@@ -360,8 +501,8 @@ export default function AdminCatalogPage() {
 
       {tab === "fonts" && (
         <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
-          {fonts.length === 0 && <p className="text-sm text-muted">No custom fonts yet.</p>}
-          {fonts.map((font) => (
+          {filteredFonts.length === 0 && <p className="text-sm text-muted">No custom fonts yet.</p>}
+          {filteredFonts.map((font) => (
             <div key={font.id} className="card p-5">
               <div className="flex items-start justify-between">
                 <div>

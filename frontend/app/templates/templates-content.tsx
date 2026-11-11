@@ -143,14 +143,6 @@ export function TemplatesContent({
     };
   }, [search]);
 
-  useEffect(() => {
-    const params = new URLSearchParams();
-    if (category && category !== ALL) params.set("category", category);
-    if (debouncedSearch.trim()) params.set("search", debouncedSearch.trim());
-    const query = params.toString();
-    window.history.replaceState(null, "", `${window.location.pathname}${query ? `?${query}` : ""}`);
-  }, [category, debouncedSearch]);
-
   const categoryCounts = useMemo(() => {
     const counts: Record<string, number> = {};
     for (const template of templates) {
@@ -164,10 +156,7 @@ export function TemplatesContent({
     [categoryCounts]
   );
 
-  const activeCategory =
-    category.toLowerCase() === ALL.toLowerCase()
-      ? ALL
-      : categories.find((item) => item.toLowerCase() === category.toLowerCase()) || category;
+
 
   const visible = useMemo(() => {
     const query = debouncedSearch.trim().toLowerCase();
@@ -383,10 +372,10 @@ export function TemplatesContent({
           <button
             type="button"
             onClick={() => setCategory(ALL)}
-            aria-pressed={activeCategory === ALL}
+            aria-pressed={category.toLowerCase() === ALL.toLowerCase()}
             className={cn(
               "inline-flex items-center gap-1.5 rounded-full border px-3.5 py-2 text-xs font-semibold transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-clay/50",
-              activeCategory === ALL
+              category.toLowerCase() === ALL.toLowerCase()
                 ? "border-ink bg-ink text-cream"
                 : "border-ink/15 bg-white text-ink/70 hover:border-ink hover:text-ink"
             )}
@@ -394,7 +383,7 @@ export function TemplatesContent({
             All <span className="text-[10px] opacity-60">{templates.length}</span>
           </button>
           {categories.map((item) => {
-            const active = activeCategory === item;
+            const active = category.toLowerCase() === item.toLowerCase();
             return (
               <button
                 type="button"
