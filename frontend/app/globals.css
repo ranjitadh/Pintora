@@ -447,3 +447,33 @@ html.dark .hover\:text-ink:hover {
     display: none;
   }
 }
+
+@keyframes marquee {
+  0% {
+    transform: translateX(0);
+  }
+  100% {
+    transform: translateX(-50%);
+  }
+}
+
+.marquee-container .animate-marquee {
+  display: flex;
+  gap: 16px;
+  animation: marquee 25s linear infinite;
+}
+
+html.dark .marquee-container .animate-marquee > div {
+  border-color: white/10;
+  background: white/5;
+  color: white/70;
+}
+
+html.dark .marquee-container .animate-marquee > div:hover {
+  color: white;
+  border-color: white/30;
+}
+
+.animation-none {
+  animation: none !important;
+}

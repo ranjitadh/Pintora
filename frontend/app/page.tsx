@@ -19,6 +19,7 @@ import { money } from "@/lib/utils";
 import { ProductCard } from "@/components/product-card";
 import { LinkButton } from "@/components/ui";
 import { ProductShowcase } from "@/components/showcase/product-showcase";
+import { TrustedBy } from "@/components/trusted-by";
 
 export default function HomePage() {
   const [products, setProducts] = useState<ProductListItem[]>([]);
@@ -270,6 +271,8 @@ export default function HomePage() {
             </div>
           </div>
         </section>
+
+        <TrustedBy />
     </div>
   );
 }
