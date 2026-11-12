@@ -11,9 +11,12 @@ const AFTER_SRC = "/studio/real.png"; // Image 2: real product mockup
 
 const PRODUCTS = [
   { key: "tshirt", label: "T-shirt" },
+  { key: "hoodie", label: "Hoodie" },
   { key: "mug", label: "Mug" },
   { key: "bag", label: "Bag" },
+  { key: "tote", label: "Tote" },
   { key: "phone-case", label: "Phone case" },
+  { key: "poster", label: "Poster" },
   { key: "card", label: "Card" },
 ];
 
