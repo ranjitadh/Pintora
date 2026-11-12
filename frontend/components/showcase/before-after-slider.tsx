@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useRef, useState } from "react";
+import { ChevronLeft, ChevronRight } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 interface BeforeAfterSliderProps {
@@ -14,10 +15,10 @@ interface BeforeAfterSliderProps {
 export function BeforeAfterSlider({ beforeSrc, afterSrc, beforeLabel, afterLabel, className }: BeforeAfterSliderProps) {
   const [split, setSplit] = useState(0.5);
   const containerRef = useRef<HTMLDivElement>(null);
-  const afterRef = useRef<HTMLImageElement>(null);
-  const handleRef = useRef<HTMLButtonElement>(null);
+  const beforeRef = useRef<HTMLImageElement>(null);
+  const dividerRef = useRef<HTMLDivElement>(null);
   const rafRef = useRef<number | null>(null);
-  const pendingY = useRef<number | null>(null);
+  const pendingX = useRef<number | null>(null);
   const draggingRef = useRef(false);
 
   const clamp = (value: number) => Math.min(1, Math.max(0, value));
@@ -25,20 +26,18 @@ export function BeforeAfterSlider({ beforeSrc, afterSrc, beforeLabel, afterLabel
   // Imperative DOM-only update during drag (no React state per frame)
   const applySplitImperative = useCallback((value: number) => {
     const clamped = clamp(value);
-    const container = containerRef.current;
-    const afterEl = afterRef.current;
-    const handleEl = handleRef.current;
+    const beforeEl = beforeRef.current;
+    const dividerEl = dividerRef.current;
 
-    if (!container || !afterEl || !handleEl) return;
+    if (!beforeEl || !dividerEl) return;
 
-    // Portrait: clip from top, handle moves vertically
     const pct = Math.round(clamped * 10000) / 100;
-    afterEl.style.clipPath = `inset(${pct}% 0 0 0)`;
-    handleEl.style.top = `${clamped * 100}%`;
-    handleEl.style.transform = "translateY(-50%) translateZ(0)";
+    // Before (flat artwork) sits on the left; clip it from the right edge.
+    beforeEl.style.clipPath = `inset(0 ${100 - pct}% 0 0)`;
+    dividerEl.style.left = `${pct}%`;
   }, []);
 
-  // State + DOM update — for keyboard and click
+  // State + DOM update for keyboard and click
   const applySplit = useCallback((value: number) => {
     const clamped = clamp(value);
     setSplit(clamped);
@@ -46,26 +45,26 @@ export function BeforeAfterSlider({ beforeSrc, afterSrc, beforeLabel, afterLabel
   }, [applySplitImperative]);
 
   const flush = useCallback(() => {
-    if (pendingY.current === null) {
+    if (pendingX.current === null) {
       rafRef.current = null;
       return;
     }
     const container = containerRef.current;
     if (!container) {
-      pendingY.current = null;
+      pendingX.current = null;
       rafRef.current = null;
       return;
     }
     const rect = container.getBoundingClientRect();
-    const value = clamp((pendingY.current - rect.top) / rect.height);
+    const value = clamp((pendingX.current - rect.left) / rect.width);
     applySplitImperative(value);
-    pendingY.current = null;
+    pendingX.current = null;
     rafRef.current = null;
   }, [applySplitImperative]);
 
-  const setSplitFromClientY = useCallback(
-    (clientY: number) => {
-      pendingY.current = clientY;
+  const setSplitFromClientX = useCallback(
+    (clientX: number) => {
+      pendingX.current = clientX;
       if (rafRef.current === null) {
         rafRef.current = requestAnimationFrame(flush);
       }
@@ -76,9 +75,9 @@ export function BeforeAfterSlider({ beforeSrc, afterSrc, beforeLabel, afterLabel
   const onPointerMove = useCallback(
     (event: PointerEvent) => {
       if (!draggingRef.current) return;
-      setSplitFromClientY(event.clientY);
+      setSplitFromClientX(event.clientX);
     },
-    [setSplitFromClientY]
+    [setSplitFromClientX]
   );
 
   const endDrag = useCallback(() => {
@@ -91,10 +90,10 @@ export function BeforeAfterSlider({ beforeSrc, afterSrc, beforeLabel, afterLabel
       rafRef.current = null;
       flush();
     }
-    if (pendingY.current !== null && containerRef.current) {
+    if (pendingX.current !== null && containerRef.current) {
       const rect = containerRef.current.getBoundingClientRect();
-      setSplit(clamp((pendingY.current - rect.top) / rect.height));
-      pendingY.current = null;
+      setSplit(clamp((pendingX.current - rect.left) / rect.width));
+      pendingX.current = null;
     }
   }, [onPointerMove, flush]);
 
@@ -102,26 +101,26 @@ export function BeforeAfterSlider({ beforeSrc, afterSrc, beforeLabel, afterLabel
     (event: React.PointerEvent) => {
       event.preventDefault();
       draggingRef.current = true;
-      setSplitFromClientY(event.clientY);
+      setSplitFromClientX(event.clientX);
       document.addEventListener("pointermove", onPointerMove);
       document.addEventListener("pointerup", endDrag);
       document.addEventListener("pointercancel", endDrag);
     },
-    [setSplitFromClientY, onPointerMove, endDrag]
+    [setSplitFromClientX, onPointerMove, endDrag]
   );
 
   const onContainerClick = useCallback(
     (event: React.MouseEvent) => {
       if (draggingRef.current) return;
-      setSplitFromClientY(event.clientY);
+      setSplitFromClientX(event.clientX);
     },
-    [setSplitFromClientY]
+    [setSplitFromClientX]
   );
 
   const onKeyDown = useCallback(
     (event: React.KeyboardEvent) => {
-      if (event.key === "ArrowUp") applySplit(split - 0.02);
-      else if (event.key === "ArrowDown") applySplit(split + 0.02);
+      if (event.key === "ArrowLeft") applySplit(split - 0.02);
+      else if (event.key === "ArrowRight") applySplit(split + 0.02);
       else if (event.key === "Home") applySplit(0);
       else if (event.key === "End") applySplit(1);
     },
@@ -132,80 +131,68 @@ export function BeforeAfterSlider({ beforeSrc, afterSrc, beforeLabel, afterLabel
     <div
       ref={containerRef}
       className={cn(
-        "relative overflow-hidden rounded-2xl bg-ink shadow-card touch-none select-none",
+        "relative h-full w-full cursor-ew-resize touch-none select-none overflow-hidden bg-ink",
         className
       )}
       onClick={onContainerClick}
       onKeyDown={onKeyDown}
-      role="separator"
+      onPointerDown={onPointerDown}
+      role="slider"
       aria-label="Before/after comparison"
       aria-valuenow={Math.round(split * 100)}
       aria-valuemin={0}
       aria-valuemax={100}
       tabIndex={0}
-      style={{ touchAction: "none-y" }}
     >
-      {/* After image (real product) - revealed from top */}
-      <div className="absolute inset-0 h-full w-full overflow-hidden">
-        <img
-          ref={afterRef}
-          src={afterSrc}
-          alt=""
-          data-testid="slider-after"
-          className="h-full w-full object-cover will-change-transform"
-          style={{ transform: "translateZ(0)" }}
-          aria-hidden="true"
-          decoding="async"
-          loading="eager"
-        />
-      </div>
-
-      {/* Before image (flat artwork) - full background */}
+      {/* After image (with surface) — full background */}
       <img
-        src={beforeSrc}
+        src={afterSrc}
         alt=""
-        data-testid="slider-before"
-        className="h-full w-full object-cover will-change-transform"
+        data-testid="slider-after"
+        className="absolute inset-0 h-full w-full object-cover"
         style={{ transform: "translateZ(0)" }}
         aria-hidden="true"
         decoding="async"
         loading="eager"
+        draggable={false}
       />
 
-      {/* Labels at top */}
-      <div className="absolute inset-0 flex items-start justify-between p-4 pointer-events-none text-xs font-mono uppercase tracking-wider">
-        <span className="bg-white/90 text-ink px-2.5 py-1.5 rounded-full shadow-sm">
+      {/* Before image (flat artwork) — clipped to the left of the divider */}
+      <img
+        ref={beforeRef}
+        src={beforeSrc}
+        alt=""
+        data-testid="slider-before"
+        className="absolute inset-0 h-full w-full object-cover"
+        style={{ clipPath: "inset(0 50% 0 0)", transform: "translateZ(0)" }}
+        aria-hidden="true"
+        decoding="async"
+        loading="eager"
+        draggable={false}
+      />
+
+      {/* Corner labels */}
+      <div className="pointer-events-none absolute inset-0 flex items-start justify-between p-4">
+        <span className="rounded-full bg-ink/70 px-3 py-1.5 font-mono text-[10px] uppercase tracking-wider text-cream backdrop-blur-sm">
           {beforeLabel}
         </span>
-        <span className="bg-white/90 text-ink px-2.5 py-1.5 rounded-full shadow-sm">
+        <span className="rounded-full bg-ink/70 px-3 py-1.5 font-mono text-[10px] uppercase tracking-wider text-cream backdrop-blur-sm">
           {afterLabel}
         </span>
       </div>
 
-      {/* Draggable handle (vertical) */}
-      <button
-        ref={handleRef}
-        onPointerDown={onPointerDown}
-        onMouseDown={(e) => e.preventDefault()}
-        style={{ top: `${split * 100}%`, transform: "translateY(-50%) translateZ(0)" }}
-        className="absolute left-1/2 z-20 flex h-12 w-12 items-center justify-center rounded-full border-2 border-white bg-white shadow-xl transition-none cursor-grab active:cursor-grabbing"
-        aria-label="Drag comparison divider"
-        aria-valuetext={`${Math.round(split * 100)}%`}
-        draggable={false}
+      {/* Divider line + handle */}
+      <div
+        ref={dividerRef}
+        className="pointer-events-none absolute inset-y-0 z-20"
+        style={{ left: `${split * 100}%` }}
       >
-        <div className="absolute top-1 left-1/2 -translate-x-1/2 text-ink">
-          <span className="block h-1 w-4 bg-ink rounded-sm" />
+        <div className="absolute inset-y-0 left-0 w-px -translate-x-1/2 bg-cream/80" />
+        <div className="absolute top-1/2 left-0 flex h-11 w-11 -translate-x-1/2 -translate-y-1/2 items-center justify-center rounded-full bg-cream text-ink shadow-[0_4px_20px_rgba(0,0,0,0.45)]">
+          <ChevronLeft size={15} strokeWidth={2.5} className="-mr-0.5" />
+          <ChevronRight size={15} strokeWidth={2.5} className="-ml-0.5" />
         </div>
-        <div className="absolute bottom-1 left-1/2 -translate-x-1/2 text-ink">
-          <span className="block h-1 w-4 bg-ink rounded-sm" />
-        </div>
-      </button>
-
-      {draggingRef.current && (
-        <span className="absolute left-1/2 -translate-x-1/2 -top-10 z-30 text-[10px] font-mono text-white bg-ink/90 px-2 py-1 rounded whitespace-nowrap pointer-events-none">
-          {Math.round(split * 100)}%
-        </span>
-      )}
+      </div>
     </div>
   );
 }

@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { ArrowRight } from "lucide-react";
+import { ArrowRight, BookOpen, LayoutGrid, Waves } from "lucide-react";
 import { useState } from "react";
 import { BeforeAfterSlider } from "./before-after-slider";
 import { cn } from "@/lib/utils";
@@ -32,27 +32,19 @@ const PRODUCTS = [
   { key: "shorts", label: "Shorts" },
 ];
 
-const COLORS = [
-  { name: "Ink Black", hex: "#211b16" },
-  { name: "Cream", hex: "#fbf7ef" },
-  { name: "Clay", hex: "#d95d39" },
-  { name: "Navy", hex: "#062334" },
-  { name: "Olive", hex: "#65714c" },
-];
-
 const FEATURES = [
   {
-    step: "01",
+    icon: BookOpen,
     title: "Beyond flat artwork.",
     text: "See the difference between a flat overlay and a preview with surface detail.",
   },
   {
-    step: "02",
+    icon: Waves,
     title: "A feel for the material.",
     text: "Bring fabric texture, curves and shadows into the picture.",
   },
   {
-    step: "03",
+    icon: LayoutGrid,
     title: "Explore different products.",
     text: "Explore how artwork looks on T-shirts, mugs, bags, phone cases and cards.",
   },
@@ -60,103 +52,96 @@ const FEATURES = [
 
 export function ProductShowcase() {
   const [activeProduct, setActiveProduct] = useState(0);
-  const [selectedColor, setSelectedColor] = useState(COLORS[0].hex);
 
   return (
-    <section data-testid="showcase" className="relative overflow-hidden bg-ink py-20 lg:py-32 text-cream">
+    <section data-testid="showcase" className="relative overflow-hidden bg-ink py-20 lg:py-28 text-cream">
       <div className="absolute -inset-1 bg-clay/10 blur-[120px] pointer-events-none" />
       <div className="absolute -inset-1/2 top-1/2 h-full w-[200%] bg-clay/10 blur-[100px] rotate-12 pointer-events-none" />
 
       <div className="container-x relative">
-        {/* Section header */}
-        <div className="mx-auto max-w-2xl text-center">
-          <p className="font-mono text-[10px] uppercase tracking-[0.24em] text-clay/70">
-            Product preview
-          </p>
-          <h2 className="mt-4 font-display text-3xl leading-tight text-cream sm:text-4xl lg:text-5xl">
-            Your design. <span className="text-clay italic">Part of the product.</span>
-          </h2>
-          <p className="mt-4 text-sm leading-relaxed text-cream/70 sm:text-base">
-            See how artwork looks on the product, with surface detail, light and shadow
-            bringing the preview to life.
-          </p>
-        </div>
+        <div className="grid items-center gap-12 lg:grid-cols-[minmax(0,1.45fr)_minmax(0,1fr)] lg:gap-16">
+          {/* Comparison card */}
+          <div className="overflow-hidden rounded-2xl border border-white/10 bg-white/[0.02] shadow-[0_30px_80px_-40px_rgba(0,0,0,0.8)]">
+            {/* Card header */}
+            <div className="flex items-center justify-between gap-4 border-b border-white/10 px-5 py-3.5">
+              <span className="flex shrink-0 items-center gap-2 font-mono text-[10px] uppercase tracking-wider text-cream/60">
+                <span className="h-1.5 w-1.5 rounded-full bg-clay" />
+                A closer look
+              </span>
 
-        {/* Product + colour controls */}
-        <div className="mt-10 flex flex-col items-center gap-4">
-          <div className="flex items-center gap-3">
-            <span className="text-[10px] font-semibold uppercase tracking-wider text-clay/60">
-              Colour
-            </span>
-            <div className="flex gap-2">
-              {COLORS.map((color) => (
-                <button
-                  key={color.name}
-                  onClick={() => setSelectedColor(color.hex)}
-                  className={cn(
-                    "h-8 w-8 rounded-full border transition-all duration-200",
-                    selectedColor === color.hex
-                      ? "border-clay ring-2 ring-clay ring-offset-2 ring-offset-ink"
-                      : "border-white/15 hover:border-white/50"
-                  )}
-                  style={{ backgroundColor: color.hex }}
-                  aria-label={color.name}
-                />
+              <div className="flex min-w-0 items-center gap-1 overflow-x-auto scrollbar-hide">
+                {PRODUCTS.map((product, index) => (
+                  <button
+                    key={product.key}
+                    onClick={() => setActiveProduct(index)}
+                    className={cn(
+                      "shrink-0 rounded-full border px-3 py-1.5 text-[10px] font-semibold uppercase tracking-wide transition duration-200",
+                      activeProduct === index
+                        ? "border-clay bg-clay/15 text-clay"
+                        : "border-transparent text-cream/50 hover:bg-white/5 hover:text-cream/80"
+                    )}
+                  >
+                    {product.label}
+                  </button>
+                ))}
+              </div>
+
+              <span className="hidden shrink-0 font-mono text-[10px] tracking-wide text-cream/35 xl:block">
+                Same design. A different feel.
+              </span>
+            </div>
+
+            {/* Comparison area */}
+            <div className="relative aspect-[4/3] w-full">
+              <BeforeAfterSlider
+                beforeSrc={BEFORE_SRC}
+                afterSrc={AFTER_SRC}
+                beforeLabel="Flat artwork"
+                afterLabel="With surface"
+                className="h-full w-full"
+              />
+            </div>
+          </div>
+
+          {/* Content */}
+          <div className="max-w-md lg:ml-auto">
+            <p className="flex items-center gap-2 font-mono text-[10px] uppercase tracking-[0.24em] text-cream/50">
+              <span className="h-1.5 w-1.5 rounded-full bg-clay" />
+              Product preview
+            </p>
+
+            <h2 className="mt-5 font-display text-4xl leading-[1.08] text-cream sm:text-5xl">
+              Your design.
+              <br />
+              <span className="text-clay italic">Part of the product.</span>
+            </h2>
+
+            <p className="mt-5 text-sm leading-relaxed text-cream/60 sm:text-base">
+              See how artwork looks on the product, with surface detail, light and shadow
+              bringing the preview to life.
+            </p>
+
+            <ul className="mt-8 space-y-5">
+              {FEATURES.map((feature) => (
+                <li key={feature.title} className="flex items-start gap-3.5">
+                  <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg border border-white/10 bg-white/[0.03] text-cream/70">
+                    <feature.icon size={16} strokeWidth={1.75} />
+                  </span>
+                  <div>
+                    <h3 className="text-sm font-semibold text-cream">{feature.title}</h3>
+                    <p className="mt-0.5 text-xs leading-relaxed text-cream/50">{feature.text}</p>
+                  </div>
+                </li>
               ))}
-            </div>
+            </ul>
+
+            <Link
+              href="/shop"
+              className="mt-8 inline-flex items-center gap-2 rounded-full border border-white/20 bg-white/[0.03] px-6 py-2.5 text-sm font-semibold text-cream transition hover:border-white/40 hover:bg-white/10"
+            >
+              Try the demo <ArrowRight size={15} />
+            </Link>
           </div>
-
-          <div className="flex max-w-full gap-2 overflow-x-auto scrollbar-hide px-1 pb-2">
-            {PRODUCTS.map((product, index) => (
-              <button
-                key={product.key}
-                onClick={() => setActiveProduct(index)}
-                className={cn(
-                  "shrink-0 rounded-full border px-4 py-1.5 text-[11px] font-semibold uppercase tracking-wide transition duration-200",
-                  activeProduct === index
-                    ? "border-clay bg-clay text-white"
-                    : "border-white/15 text-cream/50 hover:border-white/40 hover:text-cream/80"
-                )}
-              >
-                {product.label}
-              </button>
-            ))}
-          </div>
-        </div>
-
-        {/* Centered portrait comparison slider */}
-        <div className="mx-auto mt-8 w-full max-w-[400px]">
-          <BeforeAfterSlider
-            beforeSrc={BEFORE_SRC}
-            afterSrc={AFTER_SRC}
-            beforeLabel="Flat artwork"
-            afterLabel="With surface"
-            className="h-[560px] w-full sm:h-[620px]"
-          />
-          <p className="mt-3 text-center font-mono text-[10px] uppercase tracking-wider text-cream/40">
-            Drag the divider to compare
-          </p>
-        </div>
-
-        {/* Numbered features like Lumise */}
-        <div className="mx-auto mt-16 grid max-w-4xl gap-8 sm:grid-cols-3 sm:gap-10">
-          {FEATURES.map((feature) => (
-            <div key={feature.step} className="text-center sm:text-left">
-              <span className="font-mono text-[11px] text-clay/70">{feature.step}</span>
-              <h3 className="mt-2 font-display text-lg text-cream">{feature.title}</h3>
-              <p className="mt-1.5 text-sm leading-relaxed text-cream/60">{feature.text}</p>
-            </div>
-          ))}
-        </div>
-
-        {/* CTA */}
-        <div className="mt-14 flex justify-center">
-          <Link
-            href="/shop"
-            className="inline-flex items-center gap-2 rounded-full bg-clay px-7 py-3 text-sm font-semibold text-white transition hover:bg-clay-dark hover:shadow-lg hover:shadow-clay/20"
-          >
-            Try the demo <ArrowRight size={16} />
-          </Link>
         </div>
       </div>
     </section>
