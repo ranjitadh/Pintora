@@ -5,6 +5,7 @@ import { ArrowRight, BookOpen, LayoutGrid, Waves } from "lucide-react";
 import { useState } from "react";
 import { BeforeAfterSlider } from "./before-after-slider";
 import { cn } from "@/lib/utils";
+import { SHOWCASE_SLIDES } from "./data";
 
 const BEFORE_SRC = "/studio/img.png";
 const AFTER_SRC = "/studio/real.png";
@@ -50,8 +51,18 @@ const FEATURES = [
   },
 ];
 
+/** Helper: map the active product tab to a slide index */
+function slideIndexForProduct(idx: number): number {
+  // Use the same index for the first four products which have dedicated slides.
+  if (idx < SHOWCASE_SLIDES.length) return idx;
+  // Fallback to the first slide for any extra product.
+  return 0;
+}
+
 export function ProductShowcase() {
   const [activeProduct, setActiveProduct] = useState(0);
+  const currentSlide = slideIndexForProduct(activeProduct);
+  const slide = SHOWCASE_SLIDES[currentSlide];
 
   return (
     <section data-testid="showcase" className="relative overflow-hidden bg-ink py-20 lg:py-28 text-cream">
@@ -103,44 +114,57 @@ export function ProductShowcase() {
             </div>
           </div>
 
-          {/* Content */}
+          {/* Content – now driven by the current slide */}
           <div className="max-w-md lg:ml-auto">
             <p className="flex items-center gap-2 font-mono text-[10px] uppercase tracking-[0.24em] text-cream/50">
-              <span className="h-1.5 w-1.5 rounded-full bg-clay" />
-              Product preview
+              <span className="h-1.5 w-1.5 rounded-full bg-clay" /> Product preview
             </p>
-
             <h2 className="mt-5 font-display text-4xl leading-[1.08] text-cream sm:text-5xl">
-              Your design.
-              <br />
-              <span className="text-clay italic">Part of the product.</span>
+              {slide.heading.text}<br />
+              <span className="text-clay italic">{slide.heading.highlight}</span>
             </h2>
-
             <p className="mt-5 text-sm leading-relaxed text-cream/60 sm:text-base">
-              See how artwork looks on the product, with surface detail, light and shadow
-              bringing the preview to life.
+              {slide.description}
             </p>
-
             <ul className="mt-8 space-y-5">
-              {FEATURES.map((feature) => (
-                <li key={feature.title} className="flex items-start gap-3.5">
+              {slide.features.map((feature) => (
+                <li key={feature} className="flex items-start gap-3.5">
                   <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg border border-white/10 bg-white/[0.03] text-cream/70">
-                    <feature.icon size={16} strokeWidth={1.75} />
+                    •
                   </span>
                   <div>
-                    <h3 className="text-sm font-semibold text-cream">{feature.title}</h3>
-                    <p className="mt-0.5 text-xs leading-relaxed text-cream/50">{feature.text}</p>
+                    <h3 className="text-sm font-semibold text-cream">{feature}</h3>
                   </div>
                 </li>
               ))}
             </ul>
-
             <Link
-              href="/shop"
+              href={slide.ctaHref}
               className="mt-8 inline-flex items-center gap-2 rounded-full border border-white/20 bg-white/[0.03] px-6 py-2.5 text-sm font-semibold text-cream transition hover:border-white/40 hover:bg-white/10"
             >
-              Try the demo <ArrowRight size={15} />
+              {slide.ctaLabel} <ArrowRight size={15} />
             </Link>
+
+            {/* Vertical navigation – required for Playwright tests */}
+            <nav className="mt-12 flex flex-col gap-2">
+              {SHOWCASE_SLIDES.map((_, idx) => (
+                <button
+                  key={idx}
+                  role="button"
+                  aria-pressed={currentSlide === idx}
+                  data-testid={`slide-nav-button-${idx + 1}`}
+                  className={cn(
+                    "rounded-full border px-3 py-1.5 text-[10px] font-semibold uppercase tracking-wide transition duration-200",
+                    currentSlide === idx
+                      ? "border-clay bg-clay/15 text-clay"
+                      : "border-transparent text-cream/50 hover:bg-white/5 hover:text-cream/80"
+                  )}
+                  onClick={() => setActiveProduct(idx)}
+                >
+                  Go to slide {idx + 1}
+                </button>
+              ))}
+            </nav>
           </div>
         </div>
       </div>
