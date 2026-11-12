@@ -34,6 +34,23 @@ export function TrustedBy() {
     return () => media.removeEventListener("change", sync);
   }, []);
 
+  const renderLogo = (brand: Brand, key: string) => (
+    <div
+      key={key}
+      className="flex items-center justify-center px-8 py-4 rounded-full border border-white/10 bg-white/5 min-w-[140px]"
+    >
+      <Image
+        src={brand.src}
+        alt={brand.name}
+        width={140}
+        height={48}
+        sizes="(max-width: 640px) 120px, 140px"
+        className="h-11 w-auto object-contain opacity-80 hover:opacity-100 transition-all duration-300"
+        loading="lazy"
+      />
+    </div>
+  );
+
   return (
     <section className="bg-ink py-16 lg:py-20 overflow-hidden">
       <div className="container-x relative z-10">
@@ -56,36 +73,8 @@ export function TrustedBy() {
               reduceMotion ? "animation-none" : ""
             }`}
           >
-            {BRANDS.map((brand) => (
-              <div
-                key={brand.name}
-                className="flex items-center justify-center px-8 py-4 rounded-full border border-white/10 bg-white/5"
-              >
-                <Image
-                  src={brand.src}
-                  alt={brand.name}
-                  width={120}
-                  height={40}
-                  className="h-10 w-auto object-contain grayscale hover:grayscale-0 transition-all duration-300"
-                  priority={false}
-                />
-              </div>
-            ))}
-            {BRANDS.map((brand) => (
-              <div
-                key={brand.name + "-2"}
-                className="flex items-center justify-center px-8 py-4 rounded-full border border-white/10 bg-white/5"
-              >
-                <Image
-                  src={brand.src}
-                  alt={brand.name}
-                  width={120}
-                  height={40}
-                  className="h-10 w-auto object-contain grayscale hover:grayscale-0 transition-all duration-300"
-                  priority={false}
-                />
-              </div>
-            ))}
+            {BRANDS.map((brand) => renderLogo(brand, brand.name))}
+            {BRANDS.map((brand) => renderLogo(brand, brand.name + "-2"))}
           </div>
         </div>
 
