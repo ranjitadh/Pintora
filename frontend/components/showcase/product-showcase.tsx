@@ -22,6 +22,14 @@ const PRODUCTS = [
   { key: "cap", label: "Cap" },
   { key: "tank-top", label: "Tank top" },
   { key: "pillow", label: "Pillow" },
+  { key: "apron", label: "Apron" },
+  { key: "blanket", label: "Blanket" },
+  { key: "phone-grip", label: "Phone grip" },
+  { key: "coaster", label: "Coaster" },
+  { key: "keychain", label: "Keychain" },
+  { key: "tumbler", label: "Tumbler" },
+  { key: "jacket", label: "Jacket" },
+  { key: "shorts", label: "Shorts" },
 ];
 
 const COLORS = [
