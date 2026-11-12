@@ -18,6 +18,10 @@ const PRODUCTS = [
   { key: "phone-case", label: "Phone case" },
   { key: "poster", label: "Poster" },
   { key: "card", label: "Card" },
+  { key: "sticker", label: "Sticker" },
+  { key: "cap", label: "Cap" },
+  { key: "tank-top", label: "Tank top" },
+  { key: "pillow", label: "Pillow" },
 ];
 
 const COLORS = [
