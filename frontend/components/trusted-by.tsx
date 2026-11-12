@@ -37,7 +37,7 @@ export function TrustedBy() {
   const renderLogo = (brand: Brand, key: string) => (
     <div
       key={key}
-      className="flex items-center justify-center px-8 py-4 rounded-full border border-white/10 bg-white/5 min-w-[140px]"
+      className="flex items-center justify-center px-8 py-4 rounded-full border border-ink/20 bg-ink/5 min-w-[140px]"
     >
       <Image
         src={brand.src}
@@ -45,19 +45,19 @@ export function TrustedBy() {
         width={140}
         height={48}
         sizes="(max-width: 640px) 120px, 140px"
-        className="h-11 w-auto object-contain opacity-80 hover:opacity-100 transition-all duration-300"
+        className="h-11 w-auto object-contain opacity-90 hover:opacity-100 transition-all duration-300"
         loading="lazy"
       />
     </div>
   );
 
   return (
-    <section className="bg-ink py-16 lg:py-20 overflow-hidden">
+    <section className="bg-white py-16 lg:py-20 overflow-hidden">
       <div className="container-x relative z-10">
         <div className="flex items-center justify-between gap-4 mb-12 lg:mb-16">
           <div>
-            <p className="eyebrow text-cream/60">Trusted by</p>
-            <h2 className="mt-2 font-display text-3xl sm:text-4xl text-cream">
+            <p className="eyebrow text-ink/60">Trusted by</p>
+            <h2 className="mt-2 font-display text-3xl sm:text-4xl text-ink">
               Leading brands &amp; organizations
             </h2>
           </div>
@@ -78,7 +78,7 @@ export function TrustedBy() {
           </div>
         </div>
 
-        <div className="mt-12 flex items-center justify-center gap-x-8 gap-y-2 px-4 font-mono text-[10px] uppercase tracking-[0.24em] text-cream/70">
+        <div className="mt-12 flex items-center justify-center gap-x-8 gap-y-2 px-4 font-mono text-[10px] uppercase tracking-[0.24em] text-ink/60">
           <span>Print on demand</span>
           <span className="text-clay">✦</span>
           <span>Custom apparel</span>

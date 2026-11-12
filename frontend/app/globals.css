@@ -464,14 +464,12 @@ html.dark .hover\:text-ink:hover {
 }
 
 html.dark .marquee-container .animate-marquee > div {
-  border-color: white/10;
-  background: white/5;
-  color: white/70;
+  border-color: rgba(251, 247, 239, 0.2);
+  background: rgba(251, 247, 239, 0.05);
 }
 
 html.dark .marquee-container .animate-marquee > div:hover {
-  color: white;
-  border-color: white/30;
+  border-color: rgba(251, 247, 239, 0.4);
 }
 
 .animation-none {
