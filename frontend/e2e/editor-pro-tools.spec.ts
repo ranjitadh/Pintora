@@ -7,7 +7,6 @@ test.describe("studio pro tools", () => {
 
     await page.goto("/editor/ceramic-mug");
     await expect(page.getByRole("button", { name: /Add to cart/i }).first()).toBeVisible({ timeout: 30_000 });
-    await expect(page.getByText("Your print area is empty")).toBeVisible();
 
     await page.getByRole("button", { name: "Text", exact: true }).first().click();
     await page.getByPlaceholder("Your words here").fill("Pro Tools");

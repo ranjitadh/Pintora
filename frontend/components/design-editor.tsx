@@ -226,7 +226,8 @@ export function DesignEditor({
     [product.stages, activeStageId]
   );
   const activeArea = activeStage?.print_area;
-  const mockupUrl = activeStage?.mockup_url || "";
+  const mockupUrl = activeStage?.mockup_url || product.image_url || "";
+  const usingProductFallback = !activeStage?.mockup_url && !!product.image_url;
 
   useEffect(() => {
     nameRef.current = name;
@@ -2078,28 +2079,6 @@ export function DesignEditor({
                       className="pointer-events-none absolute inset-0 z-20 border border-dashed border-clay/70"
                     />
                   )}
-                  {!showMockupPreview && layers.length === 0 && (
-                    <div className="pointer-events-none absolute inset-0 z-30 flex flex-col items-center justify-center gap-1.5 px-4 text-center">
-                      <p className="font-display text-sm font-semibold text-ink/70">Your print area is empty</p>
-                      <p className="max-w-[220px] text-[10px] leading-relaxed text-muted">
-                        Add text, upload artwork, or drop in a template to start designing.
-                      </p>
-                      <div className="pointer-events-auto mt-1 flex items-center gap-1.5">
-                        <button
-                          onClick={() => selectTool("text")}
-                          className="rounded-full border border-ink/15 bg-white/95 px-3 py-1.5 text-[10px] font-semibold hover:border-ink"
-                        >
-                          Start typing
-                        </button>
-                        <button
-                          onClick={() => selectTool("upload")}
-                          className="rounded-full border border-ink/15 bg-white/95 px-3 py-1.5 text-[10px] font-semibold hover:border-ink"
-                        >
-                          Upload art
-                        </button>
-                      </div>
-                    </div>
-                  )}
                 </div>
               </div>
             </div>
@@ -2107,6 +2086,15 @@ export function DesignEditor({
             {showMockupPreview && (
               <div className="pointer-events-none absolute left-4 top-4 z-30 rounded-full bg-ink/85 px-3 py-1.5 font-mono text-[10px] uppercase tracking-wider text-cream">
                 Mockup preview
+              </div>
+            )}
+
+            {usingProductFallback && !showMockupPreview && (
+              <div
+                className="pointer-events-auto absolute right-3 top-3 z-30 cursor-help rounded-full border border-ink/10 bg-white/90 px-2.5 py-1 font-mono text-[9px] uppercase tracking-wider text-muted shadow-sm"
+                title="This stage has no dedicated mockup, so the product photo is shown as a preview."
+              >
+                Product preview
               </div>
             )}
 

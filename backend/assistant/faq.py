@@ -231,6 +231,104 @@ def _faq_entries(config):
             ),
         },
         {
+            "id": "design-help",
+            "keywords": [
+                "design", "help", "how to", "getting started", "start designing",
+                "what can i create", "ideas",
+            ],
+            "question": "How do I start designing?",
+            "answer": (
+                "Browse the template gallery or start with a blank canvas in the design "
+                "studio. You can add text, upload artwork (PNG, JPG, SVG), change colors, "
+                "and place designs on the product's print areas. The editor shows warnings "
+                "for low-resolution images and guides you toward print-ready settings."
+            ),
+        },
+        {
+            "id": "file-resolution",
+            "keywords": [
+                "resolution", "dpi", "ppi", "high quality", "low resolution",
+                "blurry", "pixelated",
+            ],
+            "question": "What resolution do my images need?",
+            "answer": (
+                "Artwork should be at least 300 DPI at the final print size for crisp "
+                "results. The design studio warns if your image falls below this threshold. "
+                "Vector files (SVG) scale infinitely without quality loss. PNG and JPG "
+                "uploads are accepted up to 15 MB."
+            ),
+        },
+        {
+            "id": "proofs",
+            "keywords": [
+                "proof", "proofs", "sample", "samples", "mockup", "mock-ups",
+                "preview", "see how it looks",
+            ],
+            "question": "Can I see a proof before ordering?",
+            "answer": (
+                "Yes! The design studio provides a real-time preview on the product with "
+                "light/shadow effects. You can adjust placement, colors, and rotation before "
+                "ordering. For bulk orders or corporate clients, physical samples can be "
+                "requested from the product page."
+            ),
+        },
+        {
+            "id": "design-upload",
+            "keywords": [
+                "upload", "uploading", "my design", "add my artwork",
+                "import", "drop file",
+            ],
+            "question": "How do I upload my own design?",
+            "answer": (
+                "In the design studio, use the 'Upload' button to drag and drop your PNG, "
+                "JPG, or SVG file. After uploading, you can reposition, resize, and rotate "
+                "your artwork on the product template. The studio automatically sanitizes "
+                "files to remove unsafe data and converts formats for printing."
+            ),
+        },
+        {
+            "id": "design-revision",
+            "keywords": [
+                "revision", "revisions", "change", "changes", "modify", "edit",
+                "fix", "update my design",
+            ],
+            "question": "Can I make changes to an existing design?",
+            "answer": (
+                "Yes. Save your design to access it from 'My designs' where you'll find "
+                "version history. Each save creates a new version, so you can revisit "
+                "earlier versions or revert changes. You can also duplicate a design and "
+                "make modifications to the copy."
+            ),
+        },
+        {
+            "id": "saved-designs",
+            "keywords": [
+                "saved designs", "my designs", "design library", "my account",
+                "save my work", " autosave",
+            ],
+            "question": "How do I save and access my designs?",
+            "answer": (
+                "Designs are automatically saved via autosave. You can also manually save "
+                "from the design studio. Saved designs appear in 'My designs' in your "
+                "account, where you can reopen, edit, delete, or create variants. Version "
+                "history is preserved for 30 days, and all designs are linked to your "
+                "account for easy access across devices."
+            ),
+        },
+        {
+            "id": "design-versions",
+            "keywords": [
+                "version", "versions", "version history", "earlier version",
+                "previous version", " revert",
+            ],
+            "question": "Can I go back to an earlier version?",
+            "answer": (
+                "Yes. Each save creates a new version accessible from 'My designs'. Use "
+                "the version picker to view or restore previous states. Active versions "
+                "are used for orders, but you can switch to any saved version at any time."
+            ),
+        },
+        {
             "id": "greeting",
             "keywords": ["hello", "hi", "hey", "good morning", "good afternoon", "good evening"],
             "question": "Greeting",
