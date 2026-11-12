@@ -92,7 +92,7 @@ export function ProductShowcase() {
             </div>
 
             {/* Comparison area */}
-            <div className="relative aspect-[4/3] w-full">
+            <div className="relative aspect-[0.92] w-full">
               <BeforeAfterSlider
                 beforeSrc={BEFORE_SRC}
                 afterSrc={AFTER_SRC}
