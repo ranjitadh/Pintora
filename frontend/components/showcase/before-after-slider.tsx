@@ -1,7 +1,6 @@
 "use client";
 
 import { useCallback, useRef, useState } from "react";
-import { ArrowLeft, ArrowRight } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 interface BeforeAfterSliderProps {
@@ -86,7 +85,7 @@ export function BeforeAfterSlider({ beforeSrc, afterSrc, beforeLabel, afterLabel
     <div
       ref={containerRef}
       className={cn(
-        "relative overflow-hidden rounded-2xl bg-ink shadow-card overflow-hidden",
+        "relative overflow-hidden rounded-2xl bg-ink shadow-card",
         className
       )}
       onClick={onContainerClick}
@@ -98,6 +97,7 @@ export function BeforeAfterSlider({ beforeSrc, afterSrc, beforeLabel, afterLabel
       aria-valuemax={100}
       tabIndex={0}
     >
+      {/* After image (real product) - revealed on the left side of handle */}
       <div className="absolute inset-0 h-full w-full overflow-hidden">
         <img
           src={afterSrc}
@@ -106,41 +106,52 @@ export function BeforeAfterSlider({ beforeSrc, afterSrc, beforeLabel, afterLabel
           className="h-full w-full object-cover"
           style={afterStyle}
           aria-hidden="true"
+          decoding="async"
+          loading="eager"
         />
       </div>
 
+      {/* Before image (flat artwork) - full background */}
       <img
         src={beforeSrc}
         alt=""
         data-testid="slider-before"
         className="h-full w-full object-cover"
         aria-hidden="true"
+        decoding="async"
+        loading="eager"
       />
 
+      {/* Labels */}
       <div className="absolute inset-0 flex items-end justify-between p-4 pointer-events-none text-xs font-mono uppercase tracking-wider">
-        <span className="bg-white/90 text-ink px-2 py-1 rounded"> {beforeLabel} </span>
-        <span className="bg-white/90 text-ink px-2 py-1 rounded"> {afterLabel} </span>
+        <span className="bg-white/90 text-ink px-2.5 py-1.5 rounded-full shadow-sm">
+          {beforeLabel}
+        </span>
+        <span className="bg-white/90 text-ink px-2.5 py-1.5 rounded-full shadow-sm">
+          {afterLabel}
+        </span>
       </div>
 
+      {/* Draggable handle */}
       <button
         onPointerDown={onPointerDown}
         onMouseDown={(e) => e.preventDefault()}
         style={handleStyle}
-        className="absolute top-1/2 z-20 flex h-10 w-10 items-center justify-center rounded-full border-2 border-white bg-white shadow-lg transition duration-100 ease-out active:scale-95"
+        className="absolute top-1/2 z-20 flex h-11 w-11 items-center justify-center rounded-full border-2 border-white bg-white shadow-xl transition duration-75 ease-out active:scale-90 cursor-grab active:cursor-grabbing"
         aria-label="Drag comparison divider"
         aria-valuetext={`${Math.round(split * 100)}%`}
         draggable={false}
       >
         <div className="absolute left-1 top-1/2 -translate-y-1/2 text-ink">
-          <ArrowLeft size={10} />
+          <span className="block w-1 h-4 bg-ink rounded-sm" />
         </div>
         <div className="absolute right-1 top-1/2 -translate-y-1/2 text-ink">
-          <ArrowRight size={10} />
+          <span className="block w-1 h-4 bg-ink rounded-sm" />
         </div>
       </button>
 
       {dragging && (
-        <span className="absolute -top-12 left-1/2 -translate-x-1/2 z-30 text-[10px] font-mono text-white bg-ink/80 px-2 py-1 rounded whitespace-nowrap pointer-events-none">
+        <span className="absolute -top-10 left-1/2 -translate-x-1/2 z-30 text-[10px] font-mono text-white bg-ink/90 px-2 py-1 rounded whitespace-nowrap pointer-events-none">
           {Math.round(split * 100)}%
         </span>
       )}
