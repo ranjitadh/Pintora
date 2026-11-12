@@ -1,20 +1,26 @@
 "use client";
 
+import Image from "next/image";
 import { useEffect, useState } from "react";
 
-const BRANDS = [
-  "Kadinsky Amsterdam",
-  "Buffet van Odette",
-  "Twotone",
-  "Filling Pieces",
-  "Lala Tequila",
-  "Mokumono",
-  "Yusra Mardini Foundation",
-  "T-Rex Sauces",
-  "Adidas",
-  "Anonymous",
-  "El Jefe",
-  "Footnote",
+type Brand = {
+  name: string;
+  src: string;
+};
+
+const BRANDS: Brand[] = [
+  { name: "Kadinsky Amsterdam", src: "https://merchpress.nl/assets/logo-kadinsky-DUnm1RcX.png" },
+  { name: "Buffet van Odette", src: "https://merchpress.nl/assets/logo-buffet-van-odette-4fZOLRV0.png" },
+  { name: "Twotone", src: "https://merchpress.nl/assets/logo-twotone-CzvbzktM.png" },
+  { name: "Filling Pieces", src: "https://merchpress.nl/assets/logo-filling-pieces-DPmyNQ_N.png" },
+  { name: "Lala Tequila", src: "https://merchpress.nl/assets/logo-lala-tequila-qpA2nK8G.jpg" },
+  { name: "Mokumono", src: "https://merchpress.nl/assets/logo-mokumono-DcEPI53v.png" },
+  { name: "Yusra Mardini Foundation", src: "https://merchpress.nl/assets/logo-yusra-mardini-BLJUUmSW.png" },
+  { name: "T-Rex Sauces", src: "https://merchpress.nl/assets/logo-trex-sauces-D_R171yL.png" },
+  { name: "Adidas", src: "https://merchpress.nl/assets/logo-adidas-DrF5LHIK.png" },
+  { name: "Anonymous", src: "https://merchpress.nl/assets/logo-anonymous-BRM_iyTm.avif" },
+  { name: "El Jefe", src: "https://merchpress.nl/assets/logo-el-jefe-BCLjOxeb.png" },
+  { name: "Footnote", src: "https://merchpress.nl/assets/logo-footnote-C1Ru6dzQ.png" },
 ];
 
 export function TrustedBy() {
@@ -52,18 +58,32 @@ export function TrustedBy() {
           >
             {BRANDS.map((brand) => (
               <div
-                key={brand}
-                className="flex items-center gap-2 px-6 py-3 rounded-full border border-white/10 bg-white/5 text-white/70 hover:text-white hover:border-white/30 transition-all text-sm font-medium uppercase tracking-wider"
+                key={brand.name}
+                className="flex items-center justify-center px-8 py-4 rounded-full border border-white/10 bg-white/5"
               >
-                {brand}
+                <Image
+                  src={brand.src}
+                  alt={brand.name}
+                  width={120}
+                  height={40}
+                  className="h-10 w-auto object-contain grayscale hover:grayscale-0 transition-all duration-300"
+                  priority={false}
+                />
               </div>
             ))}
             {BRANDS.map((brand) => (
               <div
-                key={brand + "-2"}
-                className="flex items-center gap-2 px-6 py-3 rounded-full border border-white/10 bg-white/5 text-white/70 hover:text-white hover:border-white/30 transition-all text-sm font-medium uppercase tracking-wider"
+                key={brand.name + "-2"}
+                className="flex items-center justify-center px-8 py-4 rounded-full border border-white/10 bg-white/5"
               >
-                {brand}
+                <Image
+                  src={brand.src}
+                  alt={brand.name}
+                  width={120}
+                  height={40}
+                  className="h-10 w-auto object-contain grayscale hover:grayscale-0 transition-all duration-300"
+                  priority={false}
+                />
               </div>
             ))}
           </div>
