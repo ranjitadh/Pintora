@@ -45,7 +45,7 @@ export function TrustedBy() {
         width={140}
         height={48}
         sizes="(max-width: 640px) 120px, 140px"
-        className="h-11 w-auto object-contain opacity-90 hover:opacity-100 transition-all duration-300"
+        className="h-11 w-auto object-contain invert grayscale brightness-0 opacity-90 hover:opacity-100 transition-all duration-300"
         loading="lazy"
       />
     </div>
