@@ -50,7 +50,7 @@ export function ProductShowcase() {
       <div className="absolute -inset-1/2 top-1/2 h-full w-[200%] bg-clay/10 blur-[100px] rotate-12 pointer-events-none" />
 
       <div className="container-x relative">
-        <div className="grid gap-12 lg:grid-cols-[1fr_280px] lg:gap-16">
+        <div className="flex flex-col items-center gap-8 lg:flex-row lg:gap-16 lg:items-start">
           {/* Preview Column */}
           <div className="flex flex-col gap-4">
             <p className="font-mono text-[10px] uppercase tracking-[0.24em] text-clay/60">
@@ -94,17 +94,17 @@ export function ProductShowcase() {
               ))}
             </div>
 
-            <div className="relative flex-1">
-              <div className="relative h-[560px] w-full">
+            <div className="relative flex-1 max-w-md mx-auto">
+              <div className="relative h-[720px] w-full max-w-sm aspect-[3/4]">
                 <BeforeAfterSlider
                   beforeSrc={BEFORE_SRC}
                   afterSrc={AFTER_SRC}
                   beforeLabel="Flat artwork"
                   afterLabel="With surface"
-                  className="h-[560px] w-full"
+                  className="h-full w-full max-w-sm"
                 />
                 <p className="mt-2 text-[11px] text-muted text-center">
-                  Drag the divider to compare flat artwork with the finished mockup.
+                  Drag the divider vertically to compare flat artwork with the finished mockup.
                 </p>
               </div>
             </div>

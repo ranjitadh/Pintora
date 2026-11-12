@@ -17,12 +17,12 @@ export function BeforeAfterSlider({ beforeSrc, afterSrc, beforeLabel, afterLabel
   const afterRef = useRef<HTMLImageElement>(null);
   const handleRef = useRef<HTMLButtonElement>(null);
   const rafRef = useRef<number | null>(null);
-  const pendingX = useRef<number | null>(null);
+  const pendingY = useRef<number | null>(null);
   const draggingRef = useRef(false);
 
   const clamp = (value: number) => Math.min(1, Math.max(0, value));
 
-  // Imperative DOM-only update — no React state, runs every RAF frame during drag
+  // Imperative DOM-only update during drag (no React state per frame)
   const applySplitImperative = useCallback((value: number) => {
     const clamped = clamp(value);
     const container = containerRef.current;
@@ -31,10 +31,11 @@ export function BeforeAfterSlider({ beforeSrc, afterSrc, beforeLabel, afterLabel
 
     if (!container || !afterEl || !handleEl) return;
 
+    // Portrait: clip from top, handle moves vertically
     const pct = Math.round(clamped * 10000) / 100;
-    afterEl.style.clipPath = `inset(0 ${100 - pct}% 0 0)`;
-    handleEl.style.left = `${clamped * 100}%`;
-    handleEl.style.transform = "translateX(-50%) translateZ(0)";
+    afterEl.style.clipPath = `inset(${pct}% 0 0 0)`;
+    handleEl.style.top = `${clamped * 100}%`;
+    handleEl.style.transform = "translateY(-50%) translateZ(0)";
   }, []);
 
   // State + DOM update — for keyboard and click
@@ -45,26 +46,26 @@ export function BeforeAfterSlider({ beforeSrc, afterSrc, beforeLabel, afterLabel
   }, [applySplitImperative]);
 
   const flush = useCallback(() => {
-    if (pendingX.current === null) {
+    if (pendingY.current === null) {
       rafRef.current = null;
       return;
     }
     const container = containerRef.current;
     if (!container) {
-      pendingX.current = null;
+      pendingY.current = null;
       rafRef.current = null;
       return;
     }
     const rect = container.getBoundingClientRect();
-    const value = clamp((pendingX.current - rect.left) / rect.width);
+    const value = clamp((pendingY.current - rect.top) / rect.height);
     applySplitImperative(value);
-    pendingX.current = null;
+    pendingY.current = null;
     rafRef.current = null;
   }, [applySplitImperative]);
 
-  const setSplitFromClientX = useCallback(
-    (clientX: number) => {
-      pendingX.current = clientX;
+  const setSplitFromClientY = useCallback(
+    (clientY: number) => {
+      pendingY.current = clientY;
       if (rafRef.current === null) {
         rafRef.current = requestAnimationFrame(flush);
       }
@@ -75,9 +76,9 @@ export function BeforeAfterSlider({ beforeSrc, afterSrc, beforeLabel, afterLabel
   const onPointerMove = useCallback(
     (event: PointerEvent) => {
       if (!draggingRef.current) return;
-      setSplitFromClientX(event.clientX);
+      setSplitFromClientY(event.clientY);
     },
-    [setSplitFromClientX]
+    [setSplitFromClientY]
   );
 
   const endDrag = useCallback(() => {
@@ -90,11 +91,10 @@ export function BeforeAfterSlider({ beforeSrc, afterSrc, beforeLabel, afterLabel
       rafRef.current = null;
       flush();
     }
-    // Sync final position to React state
-    if (pendingX.current !== null && containerRef.current) {
+    if (pendingY.current !== null && containerRef.current) {
       const rect = containerRef.current.getBoundingClientRect();
-      setSplit(clamp((pendingX.current - rect.left) / rect.width));
-      pendingX.current = null;
+      setSplit(clamp((pendingY.current - rect.top) / rect.height));
+      pendingY.current = null;
     }
   }, [onPointerMove, flush]);
 
@@ -102,26 +102,26 @@ export function BeforeAfterSlider({ beforeSrc, afterSrc, beforeLabel, afterLabel
     (event: React.PointerEvent) => {
       event.preventDefault();
       draggingRef.current = true;
-      setSplitFromClientX(event.clientX);
+      setSplitFromClientY(event.clientY);
       document.addEventListener("pointermove", onPointerMove);
       document.addEventListener("pointerup", endDrag);
       document.addEventListener("pointercancel", endDrag);
     },
-    [setSplitFromClientX, onPointerMove, endDrag]
+    [setSplitFromClientY, onPointerMove, endDrag]
   );
 
   const onContainerClick = useCallback(
     (event: React.MouseEvent) => {
       if (draggingRef.current) return;
-      setSplitFromClientX(event.clientX);
+      setSplitFromClientY(event.clientY);
     },
-    [setSplitFromClientX]
+    [setSplitFromClientY]
   );
 
   const onKeyDown = useCallback(
     (event: React.KeyboardEvent) => {
-      if (event.key === "ArrowLeft") applySplit(split - 0.02);
-      else if (event.key === "ArrowRight") applySplit(split + 0.02);
+      if (event.key === "ArrowUp") applySplit(split - 0.02);
+      else if (event.key === "ArrowDown") applySplit(split + 0.02);
       else if (event.key === "Home") applySplit(0);
       else if (event.key === "End") applySplit(1);
     },
@@ -143,8 +143,9 @@ export function BeforeAfterSlider({ beforeSrc, afterSrc, beforeLabel, afterLabel
       aria-valuemin={0}
       aria-valuemax={100}
       tabIndex={0}
-      style={{ touchAction: "none" }}
+      style={{ touchAction: "none-y" }}
     >
+      {/* After image (real product) - revealed from top */}
       <div className="absolute inset-0 h-full w-full overflow-hidden">
         <img
           ref={afterRef}
@@ -159,6 +160,7 @@ export function BeforeAfterSlider({ beforeSrc, afterSrc, beforeLabel, afterLabel
         />
       </div>
 
+      {/* Before image (flat artwork) - full background */}
       <img
         src={beforeSrc}
         alt=""
@@ -170,7 +172,8 @@ export function BeforeAfterSlider({ beforeSrc, afterSrc, beforeLabel, afterLabel
         loading="eager"
       />
 
-      <div className="absolute inset-0 flex items-end justify-between p-4 pointer-events-none text-xs font-mono uppercase tracking-wider">
+      {/* Labels at top */}
+      <div className="absolute inset-0 flex items-start justify-between p-4 pointer-events-none text-xs font-mono uppercase tracking-wider">
         <span className="bg-white/90 text-ink px-2.5 py-1.5 rounded-full shadow-sm">
           {beforeLabel}
         </span>
@@ -179,26 +182,27 @@ export function BeforeAfterSlider({ beforeSrc, afterSrc, beforeLabel, afterLabel
         </span>
       </div>
 
+      {/* Draggable handle (vertical) */}
       <button
         ref={handleRef}
         onPointerDown={onPointerDown}
         onMouseDown={(e) => e.preventDefault()}
-        style={{ left: `${split * 100}%`, transform: "translateX(-50%) translateZ(0)" }}
-        className="absolute top-1/2 z-20 flex h-12 w-12 items-center justify-center rounded-full border-2 border-white bg-white shadow-xl transition-none cursor-grab active:cursor-grabbing"
+        style={{ top: `${split * 100}%`, transform: "translateY(-50%) translateZ(0)" }}
+        className="absolute left-1/2 z-20 flex h-12 w-12 items-center justify-center rounded-full border-2 border-white bg-white shadow-xl transition-none cursor-grab active:cursor-grabbing"
         aria-label="Drag comparison divider"
         aria-valuetext={`${Math.round(split * 100)}%`}
         draggable={false}
       >
-        <div className="absolute left-1 top-1/2 -translate-y-1/2 text-ink">
-          <span className="block w-1 h-4 bg-ink rounded-sm" />
+        <div className="absolute top-1 left-1/2 -translate-x-1/2 text-ink">
+          <span className="block h-1 w-4 bg-ink rounded-sm" />
         </div>
-        <div className="absolute right-1 top-1/2 -translate-y-1/2 text-ink">
-          <span className="block w-1 h-4 bg-ink rounded-sm" />
+        <div className="absolute bottom-1 left-1/2 -translate-x-1/2 text-ink">
+          <span className="block h-1 w-4 bg-ink rounded-sm" />
         </div>
       </button>
 
       {draggingRef.current && (
-        <span className="absolute -top-10 left-1/2 -translate-x-1/2 z-30 text-[10px] font-mono text-white bg-ink/90 px-2 py-1 rounded whitespace-nowrap pointer-events-none">
+        <span className="absolute left-1/2 -translate-x-1/2 -top-10 z-30 text-[10px] font-mono text-white bg-ink/90 px-2 py-1 rounded whitespace-nowrap pointer-events-none">
           {Math.round(split * 100)}%
         </span>
       )}
