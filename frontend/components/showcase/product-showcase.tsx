@@ -6,8 +6,9 @@ import { ArrowRight } from "lucide-react";
 import { useState } from "react";
 import { BeforeAfterSlider } from "./before-after-slider";
 import { cn } from "@/lib/utils";
-const BEFORE_SRC = "/studio/img.png"; // Image 1: flat artwork
-const AFTER_SRC = "/studio/real.png"; // Image 2: real product mockup
+
+const BEFORE_SRC = "/studio/img.png";
+const AFTER_SRC = "/studio/real.png";
 
 const PRODUCTS = [
   { key: "tshirt", label: "T-shirt" },
@@ -50,22 +51,22 @@ export function ProductShowcase() {
       <div className="absolute -inset-1/2 top-1/2 h-full w-[200%] bg-clay/10 blur-[100px] rotate-12 pointer-events-none" />
 
       <div className="container-x relative">
-        <div className="flex flex-col items-center gap-8 lg:flex-row lg:gap-16 lg:items-start">
+        <div className="flex flex-col items-center gap-12 lg:flex-row lg:gap-24 lg:items-start lg:justify-between">
           {/* Preview Column */}
-          <div className="flex flex-col gap-4">
+          <div className="flex flex-col items-center gap-6 lg:items-start">
             <p className="font-mono text-[10px] uppercase tracking-[0.24em] text-clay/60">
               Product preview &middot; {PRODUCTS[activeProduct]?.label}
             </p>
 
-            <div className="flex items-center gap-2">
-              <span className="text-[10px] font-semibold uppercase tracking-wide text-clay/60">Colour</span>
-              <div className="flex gap-2 overflow-x-auto scrollbar-hide">
+            <div className="flex items-center gap-3 lg:flex-row lg:w-full">
+              <span className="text-[10px] font-semibold uppercase tracking-wide text-clay/60 shrink-0">Colour</span>
+              <div className="flex gap-2 overflow-x-auto scrollbar-hide lg:overflow-visible lg:w-full">
                 {COLORS.map((color) => (
                   <button
                     key={color.name}
                     onClick={() => setSelectedColor(color.hex)}
                     className={cn(
-                      "shrink-0 h-8 w-8 rounded-full border transition-colors duration-200",
+                      "shrink-0 h-9 w-9 rounded-full border transition-colors duration-200",
                       selectedColor === color.hex
                         ? "border-clay ring-2 ring-clay ring-offset-2 ring-offset-ink"
                         : "border-white/10 hover:border-white/50"
@@ -77,13 +78,13 @@ export function ProductShowcase() {
               </div>
             </div>
 
-            <div className="flex gap-1 overflow-x-auto scrollbar-hide pb-2">
+            <div className="flex gap-2 overflow-x-auto scrollbar-hide pb-4 lg:overflow-visible lg:w-full lg:justify-center">
               {PRODUCTS.map((product, index) => (
                 <button
                   key={product.key}
                   onClick={() => setActiveProduct(index)}
                   className={cn(
-                    "shrink-0 rounded-full border px-4 py-2 text-xs font-semibold uppercase tracking-wide transition duration-200",
+                    "shrink-0 rounded-full border px-5 py-2 text-xs font-semibold uppercase tracking-wide transition duration-200",
                     activeProduct === index
                       ? "border-clay bg-clay/10 text-clay"
                       : "border-white/20 text-cream/60 hover:border-white/50 hover:bg-white/10"
@@ -94,16 +95,16 @@ export function ProductShowcase() {
               ))}
             </div>
 
-            <div className="relative flex-1 max-w-md mx-auto">
-              <div className="relative h-[720px] w-full max-w-sm aspect-[3/4]">
+            <div className="relative w-full max-w-[340px]">
+              <div className="relative h-[820px] w-full aspect-[3/4]">
                 <BeforeAfterSlider
                   beforeSrc={BEFORE_SRC}
                   afterSrc={AFTER_SRC}
                   beforeLabel="Flat artwork"
                   afterLabel="With surface"
-                  className="h-full w-full max-w-sm"
+                  className="h-full w-full"
                 />
-                <p className="mt-2 text-[11px] text-muted text-center">
+                <p className="mt-3 text-[11px] text-muted text-center">
                   Drag the divider vertically to compare flat artwork with the finished mockup.
                 </p>
               </div>
@@ -111,7 +112,7 @@ export function ProductShowcase() {
           </div>
 
           {/* Content Column */}
-          <div className="space-y-6">
+          <div className="space-y-6 max-w-[380px]">
             <span className="inline-flex items-center gap-2 rounded-full border border-clay/30 bg-clay/5 px-3 py-1.5 font-mono text-[10px] uppercase tracking-[0.2em] text-clay">
               PRODUCT PREVIEW
             </span>
@@ -123,7 +124,7 @@ export function ProductShowcase() {
               bringing the preview to life.
             </p>
 
-            <div className="mt-6 space-y-3">
+            <div className="mt-4 space-y-3">
               <div className="flex items-start gap-3">
                 <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-clay/10 text-clay">
                   <span className="text-[10px]">•</span>
@@ -156,4 +157,3 @@ export function ProductShowcase() {
     </section>
   );
 }
-
