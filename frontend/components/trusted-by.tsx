@@ -11,7 +11,6 @@ type Brand = {
 const BRANDS: Brand[] = [
   { name: "Kadinsky Amsterdam", src: "https://merchpress.nl/assets/logo-kadinsky-DUnm1RcX.png" },
   { name: "Buffet van Odette", src: "https://merchpress.nl/assets/logo-buffet-van-odette-4fZOLRV0.png" },
-  { name: "Twotone", src: "https://merchpress.nl/assets/logo-twotone-CzvbzktM.png" },
   { name: "Filling Pieces", src: "https://merchpress.nl/assets/logo-filling-pieces-DPmyNQ_N.png" },
   { name: "Mokumono", src: "https://merchpress.nl/assets/logo-mokumono-DcEPI53v.png" },
   { name: "Yusra Mardini Foundation", src: "https://merchpress.nl/assets/logo-yusra-mardini-BLJUUmSW.png" },
