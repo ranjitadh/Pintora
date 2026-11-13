@@ -225,38 +225,38 @@ PRODUCTS = [
     ("Drinkware", "Stoneware Mug", Decimal("17.90"), "#A9CCE3", "Stoneware Mug", "Handcrafted stoneware mug", "Rustic stoneware mug for morning coffee."),
     ("Drinkware", "Glass Mug", Decimal("14.90"), "#D5DBDB", "Glass Mug", "Clear glass coffee mug", "Transparent glass mug for espresso and coffee."),
     ("Drinkware", "Latte Mug", Decimal("16.90"), "#F0B27A", "Latte Mug", "Large latte mug", "Large ceramic mug for latte and cappuccino."),
-    ("Drinkware", "Espresso Glass", Decimal("11.90"\), "#AAB7B8", "Espresso Glass", "Small espresso glass", "Small glass cup for espresso shots."),
+    ("Drinkware", "Espresso Glass", Decimal("11.90"), "#AAB7B8", "Espresso Glass", "Small espresso glass", "Small glass cup for espresso shots."),
 
     # Additional Tote Bags (Bags)
     ("Bags", "Canvas Tote Bag", Decimal("18.90"), "#A9CCE3", "Canvas Tote Bag", "Standard canvas tote bag", "Everyday canvas tote for errands."),
     ("Bags", "Beach Tote", Decimal("26.90"), "#D7BDE2", "Beach Tote", "Spacious beach tote bag", "Large tote perfect for beach days."),
     ("Bags", "Drawstring Bag", Decimal("16.90"), "#AED6F1", "Drawstring Bag", "Lightweight drawstring bag", "Simple drawstring bag for gym and travel."),
-    ("Bags", "Grocery Tote", Decimal("24.90"\), "#AAB7B8", "Grocery Tote", "Heavy duty grocery tote", "Heavy canvas tote for grocery shopping."),
-    ("Bags", "Weekender Bag", Decimal("44.90"\), "#34495E", "Weekender Bag", "Weekend travel tote bag", "Spacious tote for weekend getaways."),
+    ("Bags", "Grocery Tote", Decimal("24.90"), "#AAB7B8", "Grocery Tote", "Heavy duty grocery tote", "Heavy canvas tote for grocery shopping."),
+    ("Bags", "Weekender Bag", Decimal("44.90"), "#34495E", "Weekender Bag", "Weekend travel tote bag", "Spacious tote for weekend getaways."),
 
     # Additional Phone Cases (Accessories)
     ("Accessories", "Snap Phone Case", Decimal("22.90"), "#ECF0F1", "Phone Case", "Snap-on phone case", "Slim snap-on case for your smartphone."),
     ("Accessories", "Tough Phone Case", Decimal("27.90"), "#BDC3C7", "Tough Case", "Rugged protective phone case", "Heavy-duty protective case with shock absorption."),
     ("Accessories", "Clear Phone Case", Decimal("19.90"), "#ECF0F1", "Clear Case", "Transparent phone case", "Clear case showing your phone's original design."),
     ("Accessories", "Wallet Phone Case", Decimal("32.90"), "#95A5A6", "Wallet Case", "Wallet-style phone case", "Phone case with card slots and stand feature."),
-    ("Accessories", "Card Holder Case", Decimal("19.90"\), "#D5DBDB", "Card Holder Case", "Phone case with card holder", "Minimalist phone case with built-in card holder."),
+    ("Accessories", "Card Holder Case", Decimal("19.90"), "#D5DBDB", "Card Holder Case", "Phone case with card holder", "Minimalist phone case with built-in card holder."),
 
     # Additional Posters & Wall Art (Wall Art)
     ("Wall Art", "Museum Art Poster", Decimal("29.90"), "#ECF0F1", "Art Poster", "Museum quality art poster", "Archival quality poster for home and office decor."),
     ("Wall Art", "Canvas Print", Decimal("39.90"), "#BDC3C7", "Canvas Print", "Gallery wrapped canvas print", "Premium canvas print stretched on wooden frame."),
     ("Wall Art", "Art Print", Decimal("24.90"), "#95A5A6", "Art Print", "Fine art print", "Fine art print on premium paper."),
     ("Wall Art", "Framed Poster", Decimal("44.90"), "#7F8C8D", "Framed Poster", "Ready-to-hang poster in a stylish wooden frame.", "Ready-to-hang poster in a stylish wooden frame."),
-    ("Wall Art", "Canvas Tote Art Print", Decimal("34.90"\), "#A9CCE3", "Art Canvas Print", "Art print on canvas tote", "Canvas tote bag with art print design."),
+    ("Wall Art", "Canvas Tote Art Print", Decimal("34.90"), "#A9CCE3", "Art Canvas Print", "Art print on canvas tote", "Canvas tote bag with art print design."),
 
     # Additional Home & Living
-    ("Home & Living", "Throw Pillow", Decimal("26.90"\), "#ECF0F1", "Throw Pillow", "Decorative throw pillow", "Soft decorative pillow for couch and bed."),
-    ("Home & Living", "Throw Blanket", Decimal("49.90"\), "#95A5A6", "Throw Blanket", "Cozy throw blanket", "Warm and cozy blanket for sofa and bed."),
-    ("Home & Living", "Coaster Set", Decimal("18.90"\), "#BDC3C7", "Coaster Set", "Set of 4 drink coasters", "Protective coasters for tables and counters."),
-    ("Home & Living", "Notebook", Decimal("14.90"\), "#7F8C8D", "Notebook", "Lined notebook", "Lined notebook for journaling and notes."),
+    ("Home & Living", "Throw Pillow", Decimal("26.90"), "#ECF0F1", "Throw Pillow", "Decorative throw pillow", "Soft decorative pillow for couch and bed."),
+    ("Home & Living", "Throw Blanket", Decimal("49.90"), "#95A5A6", "Throw Blanket", "Cozy throw blanket", "Warm and cozy blanket for sofa and bed."),
+    ("Home & Living", "Coaster Set", Decimal("18.90"), "#BDC3C7", "Coaster Set", "Set of 4 drink coasters", "Protective coasters for tables and counters."),
+    ("Home & Living", "Notebook", Decimal("14.90"), "#7F8C8D", "Notebook", "Lined notebook", "Lined notebook for journaling and notes."),
     ("Home & Living", "Mouse Pad", Decimal("16.90"), "#34495E", "Mouse Pad", "Large mouse pad", "Large mouse pad for gaming and office work."),
-    ("Home & Living", "Laptop Sleeve", Decimal("28.90"\), "#2C3E50", "Laptop Sleeve", "Padded laptop sleeve", "Protective padded sleeve for laptops."),
-    ("Home & Living", "Desk Mat", Decimal("29.90"\), "#3498DB", "Desk Mat", "Large desk mouse pad", "Large desk mat for keyboard and mouse."),
-    ("Home & Living", "Throw Blanket XL", Decimal("64.90"\), "#7F8C8D", "Throw Blanket XL", "Extra large throw blanket", "Extra large cozy blanket for sofa and bed."),
+    ("Home & Living", "Laptop Sleeve", Decimal("28.90"), "#2C3E50", "Laptop Sleeve", "Padded laptop sleeve", "Protective padded sleeve for laptops."),
+    ("Home & Living", "Desk Mat", Decimal("29.90"), "#3498DB", "Desk Mat", "Large desk mouse pad", "Large desk mat for keyboard and mouse."),
+    ("Home & Living", "Throw Blanket XL", Decimal("64.90"), "#7F8C8D", "Throw Blanket XL", "Extra large throw blanket", "Extra large cozy blanket for sofa and bed."),
 ]
 
 
