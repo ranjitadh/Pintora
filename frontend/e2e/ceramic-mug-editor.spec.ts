@@ -18,7 +18,7 @@ async function register(page: Page, prefix: string) {
   await page.goto("/register");
   await page.getByLabel("First name").fill("Ceramic");
   await page.getByLabel("Last name").fill("E2E");
-  await page.getByLabel("Email").fill(`${prefix}-${Date.now()}@printora.test`);
+  await page.getByLabel("Email", { exact: true }).fill(`${prefix}-${Date.now()}@printora.test`);
   await page.getByLabel("Password", { exact: true }).fill("Playwright12345");
   await page.getByLabel("Confirm password").fill("Playwright12345");
   await page.getByRole("button", { name: /Create account/i }).click();

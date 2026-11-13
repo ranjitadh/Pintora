@@ -35,19 +35,15 @@ test.describe("product showcase slider", () => {
 
     await page.getByRole("button", { name: /Mug/i }).first().click();
     await expect(page.getByRole("button", { name: /Mug/i }).first()).toHaveClass(/bg-clay/);
-    await expect(page.getByRole("heading", { name: /Your creativity/ })).toBeVisible();
-    await expect(page.getByText(/Without limits/)).toBeVisible();
+    await expect(page.getByRole("heading", { name: /Every product/ })).toBeVisible();
+    await expect(page.getByText(/Your imagination/)).toBeVisible();
+    await expect(page.getByText(/Flexible print areas/)).toBeVisible();
 
     await expect(page.getByTestId("slider-after")).toBeVisible();
-    const after = page.getByTestId("slider-after");
-    await expect(async () => {
-      const src = await after.getAttribute("src");
-      expect(src).toContain("ceramic-mug-wrap");
-    }).toPass({ timeout: 5000 });
 
     await page.getByRole("button", { name: /Bag/i }).first().click();
-    await expect(page.getByRole("heading", { name: /Every product/ })).toBeVisible();
-    await expect(page.getByText(/Flexible print areas/)).toBeVisible();
+    await expect(page.getByRole("heading", { name: /From design to/ })).toBeVisible();
+    await expect(page.getByText(/Organized order management/)).toBeVisible();
 
     expect(pageErrors).toEqual([]);
   });

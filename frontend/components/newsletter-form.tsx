@@ -54,12 +54,12 @@ export function NewsletterForm() {
           disabled={status === "loading"}
           aria-invalid={status === "error"}
           aria-describedby="footer-newsletter-note"
-          className="h-12 w-full rounded-full border border-white/15 bg-white/10 px-5 text-sm text-white placeholder:text-white/40 outline-none transition focus:border-teal-300/70 focus:bg-white/15 focus:ring-2 focus:ring-teal-300/20 disabled:opacity-60"
+          className="h-12 w-full rounded-full border border-ink/15 bg-white px-5 text-sm text-ink placeholder:text-ink/35 outline-none transition focus:border-clay focus:ring-2 focus:ring-clay/20 disabled:opacity-60"
         />
         <button
           type="submit"
           disabled={status === "loading"}
-          className="inline-flex h-12 shrink-0 items-center justify-center gap-2 rounded-full bg-gradient-to-r from-teal-300 to-emerald-300 px-6 text-sm font-bold text-navy-950 transition hover:from-teal-200 hover:to-emerald-200 focus:outline-none focus-visible:ring-2 focus-visible:ring-teal-200/70 disabled:cursor-not-allowed disabled:opacity-70"
+          className="inline-flex h-12 shrink-0 items-center justify-center gap-2 rounded-full bg-clay px-6 text-sm font-bold text-white transition hover:bg-clay-dark focus:outline-none focus-visible:ring-2 focus-visible:ring-clay/40 disabled:cursor-not-allowed disabled:opacity-70"
         >
           {status === "loading" ? (
             <>
@@ -72,17 +72,17 @@ export function NewsletterForm() {
           )}
         </button>
       </div>
-      <p id="footer-newsletter-note" className="mt-3 text-xs leading-relaxed text-white/45">
+      <p id="footer-newsletter-note" className="mt-3 text-xs leading-relaxed text-muted">
         Studio drops, fresh templates and print tips. No spam — unsubscribe anytime.
       </p>
       <div aria-live="polite" className={cn("mt-3", !message && "hidden")}>
         {status === "success" && (
-          <p role="status" className="flex items-start gap-2 text-xs font-medium text-teal-200">
+          <p role="status" className="flex items-start gap-2 text-xs font-medium text-emerald-700">
             <CircleCheck className="mt-0.5 h-4 w-4 shrink-0" /> {message}
           </p>
         )}
         {status === "error" && (
-          <p role="alert" className="flex items-start gap-2 text-xs font-medium text-rose-300">
+          <p role="alert" className="flex items-start gap-2 text-xs font-medium text-rose-600">
             <CircleAlert className="mt-0.5 h-4 w-4 shrink-0" /> {message}
           </p>
         )}

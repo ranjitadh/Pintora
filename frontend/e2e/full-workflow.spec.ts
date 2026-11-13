@@ -26,7 +26,7 @@ test.describe("customer full workflow", () => {
     await page.goto("/register");
     await page.getByLabel("First name").fill("Full");
     await page.getByLabel("Last name").fill("Workflow");
-    await page.getByLabel("Email").fill(email);
+    await page.getByLabel("Email", { exact: true }).fill(email);
     await page.getByLabel("Password", { exact: true }).fill(password);
     await page.getByLabel("Confirm password").fill(password);
     await page.getByRole("button", { name: /Create account/i }).click();
@@ -55,6 +55,7 @@ test.describe("customer full workflow", () => {
     await page.getByRole("button", { name: /Add to cart/i }).first().click();
     await page.waitForURL("/cart", { timeout: 15000 });
     await expect(page.getByRole("heading", { name: /Almost yours/i })).toBeVisible();
+    await expect(page.getByRole("button", { name: /Increase quantity of/i }).first()).toBeVisible();
 
     // Checkout
     await page.getByRole("button", { name: /Checkout/i }).click();
@@ -98,7 +99,7 @@ test.describe("admin full workflow", () => {
     page.on("pageerror", (error) => pageErrors.push(error.message));
 
     await page.goto("/login?next=/admin");
-    await page.getByLabel("Email").fill(email!);
+    await page.getByLabel("Email", { exact: true }).fill(email!);
     await page.getByLabel("Password").fill(password!);
     await page.getByRole("button", { name: /^Sign in$/i }).click();
     await expect(page).toHaveURL(/\/admin/);
@@ -126,7 +127,7 @@ test.describe("design editor", () => {
     await page.goto("/register");
     await page.getByLabel("First name").fill("Studio");
     await page.getByLabel("Last name").fill("User");
-    await page.getByLabel("Email").fill(`studio-${Date.now()}@printora.test`);
+    await page.getByLabel("Email", { exact: true }).fill(`studio-${Date.now()}@printora.test`);
     await page.getByLabel("Password", { exact: true }).fill("Playwright12345");
     await page.getByLabel("Confirm password").fill("Playwright12345");
     await page.getByRole("button", { name: /Create account/i }).click();

@@ -7,6 +7,16 @@ test.describe("public storefront", () => {
     await expect(page.getByRole("link", { name: /Shop design/i }).first()).toBeVisible();
   });
 
+  test("footer newsletter accepts a subscription", async ({ page }) => {
+    await page.goto("/");
+    const newsletter = page.getByTestId("newsletter-form");
+    await newsletter.scrollIntoViewIfNeeded();
+    await expect(newsletter).toBeVisible();
+    await newsletter.locator("#footer-newsletter-email").fill(`newsletter-${Date.now()}@printora.test`);
+    await newsletter.getByRole("button", { name: /Join the list/i }).click();
+    await expect(page.getByRole("status")).toContainText(/on the list|already subscribed/i);
+  });
+
   test("home hero pairs a studio photo with a looping video", async ({ page }) => {
     await page.goto("/");
     const hero = page.locator("section.home-hero");
@@ -104,6 +114,24 @@ test.describe("public storefront", () => {
 
     await page.goto(`/products/${slug}`);
     await expect(page.getByRole("link", { name: /Customize this product/i })).toBeVisible();
+  });
+
+  test("unknown product slugs return a real 404", async ({ request }) => {
+    const response = await request.get("/products/does-not-exist");
+    expect(response.status()).toBe(404);
+    const html = await response.text();
+    expect(html).toContain("This piece isn");
+  });
+
+  test("free-shipping copy matches the configured threshold", async ({ page, request }) => {
+    const configResponse = await request.get("/api/store/config/");
+    const config = await configResponse.json();
+    const threshold = Number(config.free_shipping_threshold);
+
+    await page.goto("/products/classic-tee");
+    await expect(page.getByText(`Free shipping over $${threshold}`).first()).toBeVisible();
+    await page.goto("/");
+    await expect(page.getByText(`Free shipping over $${threshold}`).first()).toBeVisible();
   });
 
   test("studio loads for a product with stages", async ({ page, request }) => {
@@ -230,7 +258,7 @@ test.describe("customer auth", () => {
     await page.goto("/register");
     await page.getByLabel("First name").fill(firstName);
     await page.getByLabel("Last name").fill("Tester");
-    await page.getByLabel("Email").fill(email);
+    await page.getByLabel("Email", { exact: true }).fill(email);
     await page.getByLabel("Password", { exact: true }).fill("Playwright12345");
     await page.getByLabel("Confirm password").fill("Playwright12345");
     await page.getByRole("button", { name: /Create account/i }).click();
@@ -254,7 +282,7 @@ test.describe("admin access", () => {
     test.skip(!email || !password, "Set E2E_ADMIN_EMAIL and E2E_ADMIN_PASSWORD to run admin E2E.");
 
     await page.goto("/login?next=/admin");
-    await page.getByLabel("Email").fill(email!);
+    await page.getByLabel("Email", { exact: true }).fill(email!);
     await page.getByLabel("Password").fill(password!);
     await page.getByRole("button", { name: /^Sign in$/i }).click();
 

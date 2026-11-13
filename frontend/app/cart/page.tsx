@@ -151,6 +151,7 @@ export default function CartPage() {
                     <button
                       disabled={busyItem === item.id}
                       onClick={() => updateQuantity(item.id, item.quantity - 1)}
+                      aria-label={`Decrease quantity of ${item.product_detail.name}`}
                       className="flex h-8 w-8 items-center justify-center rounded-full border border-ink/15 hover:border-ink disabled:opacity-40"
                     >
                       <Minus size={13} />
@@ -159,6 +160,7 @@ export default function CartPage() {
                     <button
                       disabled={busyItem === item.id}
                       onClick={() => updateQuantity(item.id, item.quantity + 1)}
+                      aria-label={`Increase quantity of ${item.product_detail.name}`}
                       className="flex h-8 w-8 items-center justify-center rounded-full border border-ink/15 hover:border-ink disabled:opacity-40"
                     >
                       <Plus size={13} />
