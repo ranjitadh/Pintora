@@ -23,6 +23,7 @@ class AuthApiTests(APITestCase):
         self.assertEqual(response.data["user"]["role"], "customer")
         self.assertIn("printora_access", response.cookies)
         self.assertIn("printora_refresh", response.cookies)
+        self.assertIn("printora_session", response.cookies)
 
     def test_register_rejects_duplicate_email_case_insensitively(self):
         make_user(email="taken@example.com")
@@ -57,6 +58,7 @@ class AuthApiTests(APITestCase):
         self.assertEqual(login.status_code, status.HTTP_200_OK)
         self.assertEqual(login.data["user"]["email"], "shopper@example.com")
         self.assertIn("printora_access", login.cookies)
+        self.assertIn("printora_session", login.cookies)
 
         me = self.client.get("/api/auth/me/")
         self.assertEqual(me.status_code, status.HTTP_200_OK)
@@ -82,6 +84,29 @@ class AuthApiTests(APITestCase):
     def test_me_requires_authentication(self):
         response = self.client.get("/api/auth/me/")
         self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
+
+    def test_logout_and_failed_refresh_clear_session_cookies(self):
+        make_user(email="session@example.com")
+        login = self.client.post(
+            "/api/auth/login/", {"email": "session@example.com", "password": TEST_PASSWORD}, format="json"
+        )
+        self.assertEqual(login.status_code, status.HTTP_200_OK)
+
+        refresh = self.client.post("/api/auth/refresh/", {"refresh": "not-a-valid-token"}, format="json")
+        self.assertEqual(refresh.status_code, status.HTTP_401_UNAUTHORIZED)
+        for name in ("printora_access", "printora_refresh", "printora_session"):
+            self.assertIn(name, refresh.cookies)
+            self.assertEqual(refresh.cookies[name].value, "")
+
+        login = self.client.post(
+            "/api/auth/login/", {"email": "session@example.com", "password": TEST_PASSWORD}, format="json"
+        )
+        self.assertEqual(login.status_code, status.HTTP_200_OK)
+        logout = self.client.post("/api/auth/logout/", {}, format="json")
+        self.assertEqual(logout.status_code, status.HTTP_200_OK)
+        for name in ("printora_access", "printora_refresh", "printora_session"):
+            self.assertIn(name, logout.cookies)
+            self.assertEqual(logout.cookies[name].value, "")
 
     def test_admin_customer_list_is_role_protected(self):
         customer = make_user(email="customer@example.com")

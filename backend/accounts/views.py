@@ -36,12 +36,22 @@ def _set_auth_cookies(response, access, refresh):
         samesite=settings.AUTH_COOKIE_SAMESITE,
         path="/",
     )
+    # Readable flag used only to decide whether an auth probe is worthwhile.
+    response.set_cookie(
+        settings.AUTH_SESSION_COOKIE,
+        "1",
+        httponly=False,
+        secure=settings.AUTH_COOKIE_SECURE,
+        samesite=settings.AUTH_COOKIE_SAMESITE,
+        path="/",
+    )
     return response
 
 
 def _clear_auth_cookies(response):
     response.delete_cookie(settings.AUTH_ACCESS_COOKIE, path="/")
     response.delete_cookie(settings.AUTH_REFRESH_COOKIE, path="/")
+    response.delete_cookie(settings.AUTH_SESSION_COOKIE, path="/")
     return response
 
 
@@ -77,6 +87,12 @@ class LoginView(APIView):
 class CookieTokenRefreshView(TokenRefreshView):
     permission_classes = [AllowAny]
 
+    def handle_exception(self, exc):
+        # SimpleJWT raises ValidationError for invalid/expired refresh tokens;
+        # clear the cookie trio so the client stops probing a dead session.
+        response = super().handle_exception(exc)
+        return _clear_auth_cookies(response)
+
     def post(self, request, *args, **kwargs):
         if "refresh" not in request.data:
             request.data["refresh"] = request.COOKIES.get(settings.AUTH_REFRESH_COOKIE, "")
@@ -85,6 +101,8 @@ class CookieTokenRefreshView(TokenRefreshView):
             response = _set_auth_cookies(
                 response, response.data["access"], request.COOKIES.get(settings.AUTH_REFRESH_COOKIE, "")
             )
+        else:
+            response = _clear_auth_cookies(response)
         return response
 
 

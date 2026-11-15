@@ -38,6 +38,7 @@ export default function OrdersPage() {
           title="Sign in to see your orders"
           description="Your order history and print files live in your studio account."
           action={<LinkButton href="/login?next=/orders">Sign in</LinkButton>}
+          titleAs="h1"
         />
       </div>
     );

@@ -107,6 +107,7 @@ function AdminOrdersContent() {
               value={search}
               onChange={(event) => setSearch(event.target.value)}
               placeholder="Search order number or email…"
+              aria-label="Search orders"
               className="field pl-9"
             />
           </div>
@@ -117,6 +118,7 @@ function AdminOrdersContent() {
           <select
             value={status}
             onChange={(event) => { setStatus(event.target.value); setPage(1); }}
+            aria-label="Filter by status"
             className="field w-auto py-2 text-xs"
           >
             <option value="">All statuses</option>

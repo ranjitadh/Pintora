@@ -76,6 +76,7 @@ export default function CartPage() {
           title="Sign in to see your bag"
           description="Your cart is tied to your studio account so designs and print files stay with you."
           action={<LinkButton href="/login?next=/cart">Sign in</LinkButton>}
+          titleAs="h1"
         />
       </div>
     );
@@ -89,6 +90,7 @@ export default function CartPage() {
           title="Your bag is empty"
           description="Find a canvas and make something only you could make."
           action={<LinkButton href="/shop">Start designing</LinkButton>}
+          titleAs="h1"
         />
       </div>
     );

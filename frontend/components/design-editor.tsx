@@ -1261,6 +1261,7 @@ export function DesignEditor({
 
   return (
     <div className="fixed inset-0 z-0 flex flex-col bg-cream text-ink selection:bg-clay selection:text-cream">
+      <h1 className="sr-only">Design studio — {product.name}</h1>
       <header className="relative z-50 flex h-14 shrink-0 items-center justify-between gap-3 border-b border-ink/10 bg-cream/95 px-3 backdrop-blur-sm sm:px-5">
         <div className="flex min-w-0 items-center gap-2 sm:gap-3">
           <Link
@@ -1515,15 +1516,17 @@ export function DesignEditor({
                   {!methods.length && <p className="mt-2 text-[11px] text-rose-700">No printing methods are configured for this product.</p>}
                 </div>
                 <div className="mt-4">
-                  <label className="label">Quantity</label>
+                  <label htmlFor="editor-sidebar-quantity" className="label">Quantity</label>
                   <div className="flex items-center gap-1">
                     <button
                       onClick={() => setQuantity((v) => Math.max(1, v - 1))}
                       className="flex h-8 w-8 items-center justify-center rounded-full border border-ink/15 hover:border-ink"
+                      aria-label="Decrease quantity"
                     >
                       <Minus size={13} />
                     </button>
                     <input
+                      id="editor-sidebar-quantity"
                       type="number"
                       min={1}
                       max={1000}
@@ -1534,6 +1537,7 @@ export function DesignEditor({
                     <button
                       onClick={() => setQuantity((v) => Math.min(1000, v + 1))}
                       className="flex h-8 w-8 items-center justify-center rounded-full border border-ink/15 hover:bg-ink/5"
+                      aria-label="Increase quantity"
                     >
                       <Plus size={13} />
                     </button>
@@ -1878,7 +1882,13 @@ export function DesignEditor({
                   title={swatch}
                 />
               ))}
-              <input type="color" value={color} onChange={(event) => changeColor(event.target.value)} className="h-7 w-7 cursor-pointer rounded-full border border-ink/20 bg-transparent p-0" />
+              <input
+                type="color"
+                value={color}
+                onChange={(event) => changeColor(event.target.value)}
+                aria-label="Custom colour"
+                className="h-7 w-7 cursor-pointer rounded-full border border-ink/20 bg-transparent p-0"
+              />
             </div>
             <div className="mt-3 grid grid-cols-3 gap-1.5">
               <Button variant="outline" size="sm" onClick={() => addShape("rect")} title="Rectangle"><Square size={14} /></Button>
@@ -2211,15 +2221,17 @@ export function DesignEditor({
               )}
 
               <div>
-                <span className="label">Quantity</span>
+                <label htmlFor="editor-sheet-quantity" className="label">Quantity</label>
                 <div className="flex items-center gap-2">
                   <button
                     onClick={() => setQuantity((value) => Math.max(1, value - 1))}
                     className="flex h-10 w-10 items-center justify-center rounded-full border border-ink/15 hover:border-ink"
+                    aria-label="Decrease quantity"
                   >
                     <Minus size={14} />
                   </button>
                   <input
+                    id="editor-sheet-quantity"
                     type="number"
                     min={1}
                     max={1000}
@@ -2230,6 +2242,7 @@ export function DesignEditor({
                   <button
                     onClick={() => setQuantity((value) => Math.min(1000, value + 1))}
                     className="flex h-10 w-10 items-center justify-center rounded-full border border-ink/15 hover:border-ink"
+                    aria-label="Increase quantity"
                   >
                     <Plus size={14} />
                   </button>

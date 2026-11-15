@@ -74,7 +74,8 @@ export default function AccountPage() {
   if (!user) {
     return (
       <div className="container-x py-16 text-center">
-        <p className="font-display text-3xl">You&apos;re not signed in.</p>
+        <h1 className="font-display text-3xl">You&apos;re not signed in.</h1>
+        <p className="mt-2 text-sm text-muted">Sign in to manage your profile and studio details.</p>
         <LinkButton href="/login?next=/account" className="mt-5">Sign in</LinkButton>
       </div>
     );

@@ -13,7 +13,7 @@ function firstValue(value: string | string[] | undefined) {
 
 export const metadata: Metadata = {
   metadataBase: new URL(SITE_URL),
-  title: "Your designs · MerchPress",
+  title: "Your designs",
   description:
     "Your saved design library. Open, duplicate, download or delete any canvas — every design is versioned and ready for print.",
   alternates: { canonical: "/designs" },

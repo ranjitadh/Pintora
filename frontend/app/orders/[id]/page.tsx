@@ -4,7 +4,7 @@ import Link from "next/link";
 import { useParams, useSearchParams } from "next/navigation";
 import { Suspense, useEffect, useState } from "react";
 import { ArrowLeft, Check, Download, FileDown, PackageCheck, PenTool, Printer, Truck } from "lucide-react";
-import { api, errorMessage, mediaUrl } from "@/lib/api";
+import { ApiError, api, errorMessage, mediaUrl } from "@/lib/api";
 import { useAuth } from "@/lib/auth";
 import type { GeneratedFile, Order, OrderItem } from "@/lib/types";
 import { formatDate, money, statusTone, titleCase } from "@/lib/utils";
@@ -32,7 +32,7 @@ function OrderDetailContent() {
     api
       .get<Order>(`/orders/${params.id}/`)
       .then(setOrder)
-      .catch((err) => setError(errorMessage(err)))
+      .catch((err) => setError(err instanceof ApiError && err.status === 404 ? "" : errorMessage(err)))
       .finally(() => setLoading(false));
   };
 
@@ -63,7 +63,8 @@ function OrderDetailContent() {
   if (!user) {
     return (
       <div className="container-x py-16 text-center">
-        <p className="font-display text-3xl">Sign in to view this order.</p>
+        <h1 className="font-display text-3xl">Sign in to view this order.</h1>
+        <p className="mt-2 text-sm text-muted">Order details and print files are private to your studio account.</p>
         <LinkButton href={`/login?next=/orders/${params.id}`} className="mt-5">Sign in</LinkButton>
       </div>
     );
@@ -72,7 +73,14 @@ function OrderDetailContent() {
   if (!order) {
     return (
       <div className="container-x py-16 text-center">
-        <Alert>{error || "Order not found."}</Alert>
+        <p className="eyebrow">Order lookup</p>
+        <h1 className="mt-2 font-display text-4xl">{error ? "We couldn't open that order." : "Order not found."}</h1>
+        <p className="mt-3 text-sm text-muted">
+          {error
+            ? "Please try again in a moment."
+            : "We couldn't find an order with that reference in your account."}
+        </p>
+        {error && <div className="mt-4"><Alert>{error}</Alert></div>}
         <LinkButton href="/orders" className="mt-5" variant="secondary">Back to orders</LinkButton>
       </div>
     );

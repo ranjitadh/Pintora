@@ -107,16 +107,19 @@ export function EmptyState({
   description,
   action,
   icon,
+  titleAs = "h2",
 }: {
   title: string;
   description?: string;
   action?: React.ReactNode;
   icon?: React.ReactNode;
+  titleAs?: "h1" | "h2";
 }) {
+  const Heading = titleAs;
   return (
     <div className="card flex flex-col items-center justify-center gap-3 px-6 py-16 text-center">
       {icon && <div className="text-clay">{icon}</div>}
-      <h3 className="font-display text-2xl">{title}</h3>
+      <Heading className={cn("font-display", titleAs === "h1" ? "text-3xl" : "text-2xl")}>{title}</Heading>
       {description && <p className="max-w-md text-sm text-muted">{description}</p>}
       {action && <div className="mt-2">{action}</div>}
     </div>

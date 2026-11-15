@@ -58,7 +58,9 @@ export function ProductDetail({ slug, initialProduct }: { slug: string; initialP
 
   const [color, setColor] = useState("");
   useEffect(() => {
-    if (colors.length && !color) setColor(colors[0][0]);
+    if (!colors.length || color) return;
+    const bone = colors.find(([name]) => name.toLowerCase() === "bone");
+    setColor(bone ? bone[0] : colors[0][0]);
   }, [colors, color]);
 
   const sizes = useMemo(() => {
@@ -116,10 +118,13 @@ export function ProductDetail({ slug, initialProduct }: { slug: string; initialP
           </div>
           {gallery.length > 1 && (
             <div className="mt-3 flex gap-3 overflow-x-auto pb-1">
-              {gallery.map((url) => (
+              {gallery.map((url, index) => (
                 <button
                   key={url}
+                  type="button"
                   onClick={() => setActiveImage(url)}
+                  aria-label={`View image ${index + 1} of ${gallery.length}`}
+                  aria-pressed={activeImage === url}
                   className={cn(
                     "h-20 w-20 shrink-0 overflow-hidden rounded-xl border-2 bg-sand",
                     activeImage === url ? "border-clay" : "border-transparent"
@@ -183,6 +188,8 @@ export function ProductDetail({ slug, initialProduct }: { slug: string; initialP
                     key={name}
                     onClick={() => setColor(name)}
                     title={name}
+                    aria-label={name}
+                    aria-pressed={color === name}
                     className={cn(
                       "relative h-9 w-9 rounded-full border border-ink/15 transition",
                       color === name && "ring-2 ring-ink ring-offset-2 ring-offset-cream"
@@ -204,6 +211,7 @@ export function ProductDetail({ slug, initialProduct }: { slug: string; initialP
                   <button
                     key={item}
                     onClick={() => setSize(item)}
+                    aria-pressed={size === item}
                     className={cn(
                       "min-w-[52px] rounded-xl border px-3 py-2 text-sm font-semibold transition",
                       size === item ? "border-ink bg-ink text-cream" : "border-ink/15 bg-white hover:border-ink/40"
@@ -224,6 +232,7 @@ export function ProductDetail({ slug, initialProduct }: { slug: string; initialP
                   <button
                     key={link.id}
                     onClick={() => setMethodId(link.printing_method.id)}
+                    aria-pressed={methodId === link.printing_method.id}
                     className={cn(
                       "flex w-full items-center justify-between rounded-xl border px-4 py-3 text-left transition",
                       methodId === link.printing_method.id ? "border-ink bg-white" : "border-ink/10 hover:border-ink/30"

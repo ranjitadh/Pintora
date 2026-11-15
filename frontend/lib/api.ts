@@ -105,9 +105,11 @@ export async function request<T = any>(options: RequestOptions = {}): Promise<T>
   });
 
   if (res.status === 401 && auth && retry) {
-    const refreshed = await refreshAccess();
-    if (refreshed) {
-      return request<T>({ ...options, retry: false });
+    if (hasSessionHint()) {
+      const refreshed = await refreshAccess();
+      if (refreshed) {
+        return request<T>({ ...options, retry: false });
+      }
     }
     if (typeof window !== "undefined") {
       window.dispatchEvent(new Event("printora:logout"));
@@ -171,4 +173,9 @@ export function onLogout(listener: () => void): () => void {
   if (typeof window === "undefined") return () => {};
   window.addEventListener("printora:logout", listener);
   return () => window.removeEventListener("printora:logout", listener);
+}
+
+export function hasSessionHint(): boolean {
+  if (typeof document === "undefined") return false;
+  return document.cookie.split(";").some((part) => part.trim().startsWith("printora_session="));
 }

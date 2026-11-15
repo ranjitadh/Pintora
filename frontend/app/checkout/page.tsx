@@ -87,7 +87,8 @@ export default function CheckoutPage() {
   if (!user) {
     return (
       <div className="container-x py-16 text-center">
-        <p className="font-display text-3xl">Sign in to check out.</p>
+        <h1 className="font-display text-3xl">Sign in to check out.</h1>
+        <p className="mt-2 text-sm text-muted">Your bag and shipping details are tied to your studio account.</p>
         <LinkButton href="/login?next=/checkout" className="mt-5">Sign in</LinkButton>
       </div>
     );
@@ -96,7 +97,8 @@ export default function CheckoutPage() {
   if (!cart || cart.items.length === 0) {
     return (
       <div className="container-x py-16 text-center">
-        <p className="font-display text-3xl">Your bag is empty.</p>
+        <h1 className="font-display text-3xl">Your bag is empty.</h1>
+        <p className="mt-2 text-sm text-muted">Add a custom piece to your bag before checking out.</p>
         <LinkButton href="/shop" className="mt-5" variant="secondary">Back to shop</LinkButton>
       </div>
     );

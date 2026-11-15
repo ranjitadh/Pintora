@@ -89,7 +89,7 @@ export default function AdminCustomersPage() {
       <form onSubmit={submitSearch} className="flex w-full gap-2 sm:max-w-md">
         <div className="relative flex-1">
           <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-muted" />
-          <input value={search} onChange={(event) => setSearch(event.target.value)} placeholder="Search by email…" className="field pl-9" />
+          <input value={search} onChange={(event) => setSearch(event.target.value)} placeholder="Search by email…" aria-label="Search customers" className="field pl-9" />
         </div>
         <Button type="submit" size="sm" variant="secondary">Search</Button>
       </form>

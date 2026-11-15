@@ -50,7 +50,7 @@ export default function AdminDashboardPage() {
       </div>
 
       <div className="grid gap-6 xl:grid-cols-[minmax(0,1.6fr)_minmax(0,1fr)]">
-        <section className="space-y-6">
+        <section className="min-w-0 space-y-6">
           <div className="mb-3 flex items-center justify-between">
             <h2 className="font-display text-2xl">Recent orders</h2>
             <LinkButton href="/admin/orders" className="text-xs font-semibold text-clay hover:underline">View all</LinkButton>
@@ -87,7 +87,7 @@ export default function AdminDashboardPage() {
           </TableShell>
         </section>
 
-        <section className="space-y-6">
+        <section className="min-w-0 space-y-6">
           <div className="card p-5">
             <h2 className="font-display text-xl">Order status distribution</h2>
             <p className="mt-1 text-xs text-muted">Orders by current status.</p>

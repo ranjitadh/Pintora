@@ -155,6 +155,9 @@ CSRF_TRUSTED_ORIGINS = CORS_ALLOWED_ORIGINS
 # never readable by JavaScript.
 AUTH_ACCESS_COOKIE = "printora_access"
 AUTH_REFRESH_COOKIE = "printora_refresh"
+# Non-HttpOnly presence hint so the client can skip auth probes for anonymous
+# visitors instead of triggering guaranteed 401/400 requests on every page.
+AUTH_SESSION_COOKIE = "printora_session"
 AUTH_COOKIE_SECURE = not DEBUG
 AUTH_COOKIE_SAMESITE = "Lax"
 # Require a CSRF token on state-changing requests when authenticated via cookie.

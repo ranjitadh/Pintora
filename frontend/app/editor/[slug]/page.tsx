@@ -62,6 +62,7 @@ function EditorLoader() {
   if (!product) {
     return (
       <div className="container-x py-20 text-center">
+        <h1 className="font-display text-3xl">This studio isn&apos;t available.</h1>
         <Alert>{error || "Product not found."}</Alert>
         <LinkButton href="/shop" className="mt-6" variant="secondary">Back to shop</LinkButton>
       </div>

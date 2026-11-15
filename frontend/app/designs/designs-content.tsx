@@ -231,6 +231,7 @@ export function DesignsContent({
           title="Sign in to see your designs"
           description="Every canvas you save is versioned and kept in your studio."
           action={<LinkButton href="/login?next=/designs">Sign in</LinkButton>}
+          titleAs="h1"
         />
       </div>
     );

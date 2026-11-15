@@ -1,7 +1,7 @@
 "use client";
 
 import { createContext, useCallback, useContext, useEffect, useMemo, useState } from "react";
-import { api, onLogout } from "./api";
+import { api, hasSessionHint, onLogout } from "./api";
 import type { Cart, User } from "./types";
 
 interface AuthContextValue {
@@ -41,7 +41,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   useEffect(() => {
-    // Tokens live in HttpOnly cookies; confirm the session with /auth/me/.
+    // Tokens live in HttpOnly cookies. Skip the probe entirely for anonymous
+    // visitors so every page load doesn't log a guaranteed 401/refresh 400.
+    if (!hasSessionHint()) {
+      setLoading(false);
+      return;
+    }
     api
       .get<User>("/auth/me/")
       .then((data) => {
@@ -99,6 +104,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
     setUser(null);
     setCartCount(0);
+    if (typeof document !== "undefined") {
+      document.cookie = "printora_session=; Max-Age=0; path=/";
+    }
     window.dispatchEvent(new Event("printora:logout"));
   }, []);
 
