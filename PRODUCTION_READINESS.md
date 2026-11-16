@@ -1,6 +1,6 @@
 # MerchPress Production Readiness
 
-Date: 2026-11-07
+Date: 2026-11-16
 
 ## Overall Status: COMPLETE AND VERIFIED
 
@@ -10,12 +10,12 @@ All core features are implemented, tested, and verified. The application is read
 
 | Check | Command | Result |
 |-------|---------|--------|
-| Backend tests | `.venv/bin/python manage.py test` | **71 OK** |
+| Backend tests | `.venv/bin/python manage.py test` | **96 OK** |
 | Django system checks | `.venv/bin/python manage.py check` | No issues |
 | Migration check | `.venv/bin/python manage.py makemigrations --check --dry-run` | No changes |
 | Frontend typecheck | `npm run typecheck` | Pass |
 | Production build | `npm run build` | Pass (20 routes) |
-| E2E Playwright | `npx playwright test` | **8 passed, 1 skipped** (admin dashboard needs env vars) |
+| E2E Playwright | `npx playwright test` | **46 passed** |
 
 ## Feature Readiness Matrix
 
@@ -60,15 +60,15 @@ All core features are implemented, tested, and verified. The application is read
 | `SHOPIFY_STORE_DOMAIN` | Shopify store domain | Optional - for Shopify sync |
 | `SHOPIFY_ACCESS_TOKEN` | Shopify API token | Optional - for Shopify sync |
 | `SHOPIFY_WEBHOOK_SECRET` | Shopify webhook signing | Optional - for Shopify webhooks |
-| `REDIS_URL` | Celery broker | Optional - for async exports |
+| `CELERY_BROKER_URL` | Celery broker | Optional - for async exports |
 | `ALLOWED_IMAGE_HOSTS` | Design image host allowlist | Optional - for custom domains |
 
 ## Known Limitations
 
 1. **Stripe live payments** - Integration is implemented and tested with mocked responses only. Live card processing has NOT been verified because no Stripe credentials are configured.
 2. **Shopify live sync** - Inventory/order sync implemented and tested with local fixtures only. Not verified against a live Shopify store.
-3. **Docker** - Compose configuration authored but not executed locally (Docker daemon unavailable). Validate in CI or on a Docker host.
-4. **Media storage** - Local filesystem storage only. Production should use object storage (S3) with CDN.
+3. **Docker / Render** - Compose and Render Blueprint configurations are authored, but only local/native runs have been exercised here. Validate the hosted deployment before taking real traffic.
+4. **Media storage** - Local filesystem or a single Render persistent disk. Use object storage (S3-compatible) + CDN for multi-instance scaling.
 5. **Email** - No email backend configured. Order confirmations and notifications are not sent.
 6. **Rate limits** - Default throttling rates suitable for demo/small stores. Tune for production traffic.
 

@@ -4,6 +4,7 @@ from datetime import timedelta
 from pathlib import Path
 
 import dj_database_url
+from django.core.exceptions import ImproperlyConfigured
 from dotenv import load_dotenv
 
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -14,9 +15,21 @@ def env_bool(name: str, default: bool = False) -> bool:
     return os.getenv(name, str(default)).lower() in ("1", "true", "yes", "on")
 
 
-SECRET_KEY = os.getenv("DJANGO_SECRET_KEY", "dev-only-change-me-printora-32-bytes-minimum")
-DEBUG = env_bool("DJANGO_DEBUG", True)
+IS_RENDER = env_bool("RENDER", False)
+DEFAULT_SECRET_KEY = "dev-only-change-me-printora-32-bytes-minimum"
+SECRET_KEY = os.getenv("DJANGO_SECRET_KEY", DEFAULT_SECRET_KEY).strip()
+DEBUG = env_bool("DJANGO_DEBUG", not IS_RENDER)
+
+if not DEBUG and (SECRET_KEY == DEFAULT_SECRET_KEY or len(SECRET_KEY) < 32):
+    raise ImproperlyConfigured(
+        "Set DJANGO_SECRET_KEY to a long random value when DJANGO_DEBUG is false."
+    )
+
 ALLOWED_HOSTS = [h.strip() for h in os.getenv("DJANGO_ALLOWED_HOSTS", "localhost,127.0.0.1,testserver").split(",") if h.strip()]
+RENDER_EXTERNAL_HOSTNAME = os.getenv("RENDER_EXTERNAL_HOSTNAME", "").strip()
+RENDER_EXTERNAL_URL = os.getenv("RENDER_EXTERNAL_URL", "").strip()
+if RENDER_EXTERNAL_HOSTNAME and RENDER_EXTERNAL_HOSTNAME not in ALLOWED_HOSTS:
+    ALLOWED_HOSTS.append(RENDER_EXTERNAL_HOSTNAME)
 
 INSTALLED_APPS = [
     "django.contrib.admin",
@@ -148,7 +161,9 @@ CORS_ALLOWED_ORIGINS = [
     if o.strip()
 ]
 CORS_ALLOW_CREDENTIALS = True
-CSRF_TRUSTED_ORIGINS = CORS_ALLOWED_ORIGINS
+CSRF_TRUSTED_ORIGINS = list(CORS_ALLOWED_ORIGINS)
+if RENDER_EXTERNAL_URL and RENDER_EXTERNAL_URL not in CSRF_TRUSTED_ORIGINS:
+    CSRF_TRUSTED_ORIGINS.append(RENDER_EXTERNAL_URL)
 
 # HttpOnly JWT cookie configuration. Tokens are set by login/register and
 # sent automatically by the browser on every same-origin request; they are
@@ -210,9 +225,13 @@ if not DEBUG:
     SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")
     SECURE_HSTS_SECONDS = 31536000
     SECURE_HSTS_INCLUDE_SUBDOMAINS = True
+    SECURE_HSTS_PRELOAD = True
     SECURE_CONTENT_TYPE_NOSNIFF = True
     SESSION_COOKIE_SECURE = True
     CSRF_COOKIE_SECURE = True
+    # Render terminates TLS at its edge and the frontend proxies API/media
+    # over the private network via plain HTTP. Enabling redirects here would
+    # break those internal requests; leave Render's HTTPS enforcement in place.
     SECURE_SSL_REDIRECT = env_bool("DJANGO_SSL_REDIRECT", False)
 
 LOGGING = {

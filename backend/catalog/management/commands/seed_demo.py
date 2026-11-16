@@ -643,9 +643,15 @@ class Command(BaseCommand):
 
     def add_arguments(self, parser):
         parser.add_argument("--force", action="store_true", help="Regenerate image assets.")
+        parser.add_argument(
+            "--no-demo-customer",
+            action="store_true",
+            help="Skip the demo customer and demo order (recommended for production).",
+        )
 
     def handle(self, *args, **options):
         self.force = options["force"]
+        self.seed_demo_customer = not options["no_demo_customer"]
         self.stdout.write("Seeding MerchPress demo data…")
 
         config = StoreConfiguration.get_solo()
@@ -699,9 +705,10 @@ class Command(BaseCommand):
 
         self._seed_templates(products, stages_by_product)
         self._seed_admin()
-        demo_user = self._seed_customer()
-        if demo_user:
-            self._seed_demo_order(demo_user, products["classic-tee"])
+        if self.seed_demo_customer:
+            demo_user = self._seed_customer()
+            if demo_user:
+                self._seed_demo_order(demo_user, products["classic-tee"])
 
         self.stdout.write(self.style.SUCCESS("Seed complete."))
         self.stdout.write(

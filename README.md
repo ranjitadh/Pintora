@@ -78,10 +78,11 @@ Inside Compose, `NEXT_PUBLIC_BACKEND_ORIGIN` must be the backend service address
 - [Database schema](docs/DATABASE_SCHEMA.md)
 - [Development guide](docs/DEVELOPMENT_GUIDE.md)
 - [Deployment guide](docs/DEPLOYMENT_GUIDE.md)
+- [Render deployment guide](docs/RENDER_DEPLOYMENT.md)
 - [Feature status](docs/FEATURE_STATUS.md)
 
 ## Notes
 
 - Payments are intentionally in demo mode: checkout creates an order without charging a card.
-- Uploaded/static media is served by Django only while `DJANGO_DEBUG=true`; put media behind object storage or a web server in production.
-- JWT access/refresh tokens are stored in `localStorage` for the SPA-style client. Review this trade-off before exposing the app to high-risk environments.
+- Uploaded media is served by Django when `DJANGO_DEBUG=true` or `DJANGO_SERVE_MEDIA=true`; use a persistent disk, a web server, or object storage in production.
+- JWT access/refresh tokens are stored in HttpOnly cookies. A non-HttpOnly session hint skips auth probes for anonymous visitors, and cookie-authenticated writes require a CSRF token.

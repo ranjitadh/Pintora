@@ -1,9 +1,29 @@
+from unittest.mock import patch
+
+from django.test import TestCase
 from rest_framework import status
 
 from core.testing import TempMediaTestCase, design_payload, make_product, make_user
 from designer.models import Design
 from production.models import GeneratedFile
 from production.render import render_canvas
+
+
+class HealthCheckTests(TestCase):
+    def test_health_reports_database_ready(self):
+        response = self.client.get("/api/health/")
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(response.data["status"], "ok")
+        self.assertEqual(response.data["database"], "ok")
+
+    @patch("production.views.database_healthy", return_value=False)
+    def test_health_returns_503_when_database_is_unavailable(self, _database_healthy):
+        response = self.client.get("/api/health/")
+
+        self.assertEqual(response.status_code, status.HTTP_503_SERVICE_UNAVAILABLE)
+        self.assertEqual(response.data["status"], "error")
+        self.assertEqual(response.data["database"], "unavailable")
 
 
 class ProductionApiTests(TempMediaTestCase):

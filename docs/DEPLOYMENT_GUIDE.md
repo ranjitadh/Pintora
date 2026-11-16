@@ -1,5 +1,8 @@
 # Deployment Guide
 
+> Deploying to Render? Use the [Render deployment guide](RENDER_DEPLOYMENT.md)
+> and the root `render.yaml` Blueprint.
+
 ## Recommended topology
 
 ```text
@@ -49,10 +52,11 @@ Services: PostgreSQL, Redis, backend (Gunicorn), Celery, frontend (`next start`)
 
 ## Media and static files
 
-- **Static:** the backend startup command runs `collectstatic`; WhiteNoise serves compressed static assets.
-- **Media:** Django only serves `/media/` when `DJANGO_DEBUG=true`. In production:
+- **Static:** the backend build/start command runs `collectstatic`; WhiteNoise serves compressed static assets.
+- **Media:** Django serves `/media/` when `DJANGO_DEBUG=true` or `DJANGO_SERVE_MEDIA=true` (the default). In production:
   - Mount the `media_data` volume into Nginx and serve `/media/` directly, **or**
-  - Switch `DEFAULT_FILE_STORAGE` to S3-compatible storage and front it with a CDN.
+  - Leave `DJANGO_SERVE_MEDIA=true` so Django's media view serves it through the frontend proxy, **or**
+  - Switch the default storage backend to S3-compatible storage and front it with a CDN.
 - Back up/retain the media volume: designs, mockups, uploads and production exports live there.
 
 ## Database

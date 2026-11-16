@@ -1,4 +1,7 @@
+import logging
+
 from django.conf import settings
+from django.db import connection
 from rest_framework import status, viewsets
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
@@ -11,6 +14,17 @@ from designer.models import Design
 from .models import GeneratedFile
 from .serializers import GeneratedFileSerializer
 from .services import process_generated_file
+
+logger = logging.getLogger(__name__)
+
+
+def database_healthy() -> bool:
+    try:
+        connection.ensure_connection()
+    except Exception as exc:
+        logger.warning("Health check database connection failed: %s", exc)
+        return False
+    return True
 
 
 class ExportCreateView(APIView):
@@ -123,4 +137,9 @@ class HealthView(APIView):
     permission_classes = []
 
     def get(self, request):
-        return Response({"status": "ok", "service": "printora-api"})
+        if not database_healthy():
+            return Response(
+                {"status": "error", "service": "printora-api", "database": "unavailable"},
+                status=status.HTTP_503_SERVICE_UNAVAILABLE,
+            )
+        return Response({"status": "ok", "service": "printora-api", "database": "ok"})

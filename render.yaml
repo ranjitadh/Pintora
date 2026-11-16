@@ -1,0 +1,91 @@
+# Render Blueprint for MerchPress.
+#
+# This blueprint provisions:
+#   - printora-db    PostgreSQL 16
+#   - printora-api   Django/Gunicorn API + persistent media disk
+#   - printora-web   Next.js frontend (also proxies /api and /media)
+#
+# Before syncing:
+#   1. Rename services/database if these names are already used in your workspace.
+#   2. Set DJANGO_ADMIN_EMAIL and DJANGO_ADMIN_PASSWORD when prompted.
+#   3. If you use a custom storefront domain, update CORS_ALLOWED_ORIGINS,
+#      SITE_URL, BACKEND_URL, NEXT_PUBLIC_SITE_URL and DJANGO_ALLOWED_HOSTS.
+#   4. Rotate any credentials that have ever been committed to the repository.
+
+services:
+  - type: web
+    name: printora-api
+    runtime: python
+    rootDir: backend
+    region: oregon
+    plan: 0.5c-512mb
+    healthCheckPath: /api/health/
+    buildCommand: pip install -r requirements.txt && python manage.py collectstatic --noinput
+    preDeployCommand: python manage.py migrate --noinput
+    startCommand: gunicorn config.wsgi:application --bind 0.0.0.0:$PORT --workers 2 --threads 4 --timeout 120 --access-logfile - --error-logfile -
+    initialDeployHook: python manage.py seed_if_empty
+    disk:
+      name: printora-media
+      mountPath: /var/data
+      sizeGB: 5
+    envVars:
+      - key: PYTHON_VERSION
+        value: 3.12.6
+      - key: DJANGO_DEBUG
+        value: "false"
+      - key: DJANGO_SECRET_KEY
+        generateValue: true
+      - key: DJANGO_ALLOWED_HOSTS
+        value: .onrender.com,printora-api,printora-web,localhost,127.0.0.1
+      - key: DJANGO_MEDIA_ROOT
+        value: /var/data/media
+      - key: DJANGO_SERVE_MEDIA
+        value: "true"
+      - key: DATABASE_URL
+        fromDatabase:
+          name: printora-db
+          property: connectionString
+      - key: SITE_URL
+        value: https://printora-web.onrender.com
+      - key: BACKEND_URL
+        value: https://printora-api.onrender.com
+      - key: CORS_ALLOWED_ORIGINS
+        value: https://printora-web.onrender.com
+      - key: CELERY_TASK_ALWAYS_EAGER
+        value: "true"
+      - key: LOG_LEVEL
+        value: INFO
+      - key: DJANGO_ADMIN_EMAIL
+        sync: false
+      - key: DJANGO_ADMIN_PASSWORD
+        sync: false
+
+  - type: web
+    name: printora-web
+    runtime: node
+    rootDir: frontend
+    region: oregon
+    plan: 0.5c-512mb
+    healthCheckPath: /
+    buildCommand: npm ci --include=dev && npm run build
+    startCommand: npm run start
+    envVars:
+      - key: NODE_VERSION
+        value: 20.18.0
+      - key: NEXT_TELEMETRY_DISABLED
+        value: "1"
+      - key: NEXT_PUBLIC_API_URL
+        value: /api
+      - key: NEXT_PUBLIC_BACKEND_ORIGIN
+        value: http://printora-api:10000
+      - key: BACKEND_INTERNAL_URL
+        value: http://printora-api:10000
+      - key: NEXT_PUBLIC_SITE_URL
+        value: https://printora-web.onrender.com
+
+databases:
+  - name: printora-db
+    databaseName: printora
+    user: printora
+    postgresMajorVersion: "16"
+    region: oregon

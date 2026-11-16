@@ -1,6 +1,10 @@
 from decimal import Decimal
+from io import StringIO
+from unittest.mock import patch
 
 from django.core.files.uploadedfile import SimpleUploadedFile
+from django.core.management import call_command
+from django.test import TestCase
 from rest_framework import status
 from rest_framework.test import APITestCase
 
@@ -214,3 +218,22 @@ class CatalogApiTests(TempMediaTestCase):
             response = self.client.get(cover_url)
             self.assertEqual(response.status_code, status.HTTP_200_OK)
             self.assertEqual(b"".join(response.streaming_content), b"test-png-content")
+
+
+class SeedIfEmptyCommandTests(TestCase):
+    def test_skips_when_catalog_already_has_products(self):
+        make_product()
+        output = StringIO()
+
+        call_command("seed_if_empty", stdout=output)
+
+        self.assertIn("skipping demo seed", output.getvalue())
+
+    @patch("catalog.management.commands.seed_if_empty.call_command")
+    def test_seeds_without_demo_customer_when_catalog_is_empty(self, seed_demo):
+        output = StringIO()
+
+        call_command("seed_if_empty", stdout=output)
+
+        seed_demo.assert_called_once_with("seed_demo", no_demo_customer=True)
+        self.assertIn("Empty catalog detected", output.getvalue())
