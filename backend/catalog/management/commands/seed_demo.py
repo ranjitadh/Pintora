@@ -78,115 +78,29 @@ def _fold(draw, points, color):
     draw.line(points, fill=color, width=3, joint="curve")
 
 
-def draw_tee(back=False):
-    image = _vertical_gradient((1000, 1200), (250, 247, 241, 255), (232, 227, 218, 255))
-    draw = ImageDraw.Draw(image)
-    _shadow(image, (290, 890, 710, 1040), opacity=55)
-    body = (43, 48, 58, 255)
-    trim = (33, 37, 45, 255)
-    shirt = [
-        (352, 205), (320, 218), (176, 368), (252, 478), (342, 402),
-        (316, 980), (684, 980), (658, 402), (748, 478), (824, 368),
-        (680, 218), (648, 205), (578, 188), (500, 214), (422, 188),
-    ]
-    draw.polygon(shirt, fill=body)
-    _fold(draw, [(430, 420), (470, 700), (455, 980)], trim)
-    _fold(draw, [(570, 420), (535, 720), (548, 980)], trim)
-    if back:
-        draw.line([(430, 205), (500, 240), (570, 205)], fill=trim, width=10)
-        draw.rounded_rectangle([470, 260, 530, 300], radius=8, fill=(232, 227, 218, 255))
-    else:
-        draw.ellipse([(428, 165), (572, 255)], fill=(247, 244, 238, 255))
-        draw.arc([(428, 165), (572, 255)], 350, 190, fill=trim, width=12)
-    draw.line([(252, 478), (266, 455)], fill=(70, 76, 88, 255), width=3)
-    draw.line([(748, 478), (734, 455)], fill=(70, 76, 88, 255), width=3)
-    return image
 
 
-def draw_hoodie(back=False):
-    image = _vertical_gradient((1000, 1200), (249, 246, 240, 255), (228, 223, 214, 255))
-    draw = ImageDraw.Draw(image)
-    _shadow(image, (290, 890, 710, 1040), opacity=55)
-    body = (166, 151, 132, 255)
-    dark = (140, 126, 109, 255)
-    shirt = [
-        (350, 225), (312, 240), (170, 400), (246, 512), (342, 430),
-        (316, 980), (684, 980), (658, 430), (754, 512), (830, 400),
-        (688, 240), (650, 225), (578, 200), (500, 228), (422, 200),
-    ]
-    draw.polygon(shirt, fill=body)
-    draw.ellipse([(392, 182), (608, 348)], fill=dark)
-    draw.ellipse([(438, 218), (562, 332)], fill=(49, 45, 40, 255))
-    if not back:
-        draw.line([(470, 330), (462, 420)], fill=(244, 241, 235, 255), width=8)
-        draw.line([(530, 330), (538, 420)], fill=(244, 241, 235, 255), width=8)
-        draw.rounded_rectangle([(388, 780), (612, 916)], radius=18, outline=dark, width=6)
-        draw.line([(500, 796), (500, 900)], fill=dark, width=4)
-    _fold(draw, [(420, 480), (450, 760), (440, 940)], dark)
-    _fold(draw, [(580, 480), (550, 760), (560, 940)], dark)
-    return image
 
+MOCKUP_FILES = {
+    "classic-tee": "real-classic-tee.jpg",
+    "classic-tee-back": "real-classic-tee.jpg",
+    "premium-hoodie": "real-premium-hoodie.jpg",
+    "premium-hoodie-back": "real-premium-hoodie.jpg",
+    "ceramic-mug": "real-ceramic-mug.jpg",
+    "canvas-tote": "real-canvas-tote.jpg",
+    "phone-case": "real-phone-case.jpg",
+    "art-poster": "real-art-poster.jpg",
+}
 
-def draw_mug():
-    image = _vertical_gradient((1200, 900), (250, 247, 241, 255), (229, 224, 215, 255))
-    draw = ImageDraw.Draw(image)
-    _shadow(image, (300, 680, 880, 810), opacity=55)
-    draw.ellipse([(860, 320), (1070, 660)], outline=(224, 220, 212, 255), width=46)
-    draw.rounded_rectangle([(250, 240), (950, 760)], radius=52, fill=(247, 246, 242, 255), outline=(219, 214, 205, 255), width=3)
-    draw.ellipse([(250, 210), (950, 330)], fill=(252, 251, 248, 255), outline=(219, 214, 205, 255), width=3)
-    draw.ellipse([(268, 222), (932, 318)], outline=(232, 228, 220, 255), width=4)
-    draw.line([(274, 720), (926, 720)], fill=(232, 228, 220, 255), width=4)
-    return image
-
-
-def draw_tote():
-    image = _vertical_gradient((1000, 1200), (250, 247, 241, 255), (231, 226, 217, 255))
-    draw = ImageDraw.Draw(image)
-    _shadow(image, (250, 980, 750, 1130), opacity=55)
-    handle = (186, 168, 141, 255)
-    draw.arc([(300, 218), (470, 382)], 180, 360, fill=handle, width=26)
-    draw.arc([(530, 218), (700, 382)], 180, 360, fill=handle, width=26)
-    draw.rounded_rectangle([(260, 330), (740, 1060)], radius=22, fill=(220, 203, 174, 255))
-    draw.line([(280, 370), (720, 370)], fill=(203, 185, 155, 255), width=3)
-    draw.line([(280, 1020), (720, 1020)], fill=(203, 185, 155, 255), width=3)
-    _fold(draw, [(320, 400), (330, 700), (320, 1000)], (207, 189, 159, 255))
-    _fold(draw, [(680, 400), (670, 700), (680, 1000)], (207, 189, 159, 255))
-    return image
-
-
-def draw_phone_case():
-    image = _vertical_gradient((900, 1200), (248, 245, 239, 255), (228, 223, 214, 255))
-    draw = ImageDraw.Draw(image)
-    _shadow(image, (290, 130, 610, 1010), opacity=60)
-    draw.rounded_rectangle([(280, 120), (620, 1000)], radius=64, fill=(34, 38, 46, 255))
-    draw.rounded_rectangle([(298, 138), (602, 982)], radius=50, outline=(66, 72, 84, 255), width=4)
-    draw.rounded_rectangle([(320, 165), (455, 325)], radius=26, fill=(24, 27, 33, 255))
-    draw.ellipse([(338, 185), (400, 247)], fill=(52, 58, 70, 255))
-    draw.ellipse([(352, 199), (386, 233)], fill=(20, 23, 28, 255))
-    draw.ellipse([(410, 200), (438, 228)], fill=(58, 64, 76, 255))
-    draw.ellipse([(410, 255), (438, 283)], fill=(58, 64, 76, 255))
-    draw.line([(310, 840), (590, 840)], fill=(52, 58, 70, 255), width=3)
-    return image
-
-
-def draw_poster():
-    image = _vertical_gradient((1000, 1400), (248, 245, 238, 255), (224, 219, 209, 255))
-    draw = ImageDraw.Draw(image)
-    _shadow(image, (95, 90, 905, 1310), opacity=60, blur=24)
-    draw.rectangle([(80, 70), (920, 1300)], fill=(252, 251, 248, 255))
-    draw.rectangle([(110, 100), (890, 1270)], outline=(232, 228, 220, 255), width=2)
-    return image
-
-
-MOCKUPS = {
-    "classic-tee": (draw_tee, 1000, 1200),
-    "classic-tee-back": (lambda: draw_tee(back=True), 1000, 1200),
-    "premium-hoodie": (draw_hoodie, 1000, 1200),
-    "premium-hoodie-back": (lambda: draw_hoodie(back=True), 1000, 1200),
-    "ceramic-mug": (draw_mug, 1200, 900),
-    "canvas-tote": (draw_tote, 1000, 1200),
-    "phone-case": (draw_phone_case, 900, 1200),
-    "art-poster": (draw_poster, 1000, 1400),
+MOCKUP_SIZES = {
+    "classic-tee": (1000, 1200),
+    "classic-tee-back": (1000, 1200),
+    "premium-hoodie": (1000, 1200),
+    "premium-hoodie-back": (1000, 1200),
+    "ceramic-mug": (1200, 900),
+    "canvas-tote": (1000, 1200),
+    "phone-case": (900, 1200),
+    "art-poster": (1000, 1400),
 }
 
 
@@ -742,7 +656,9 @@ class Command(BaseCommand):
         front_stage = None
         for index, stage_spec in enumerate(spec["stages"]):
             width_mm, height_mm, x, y, w, h = stage_spec["area"]
-            mockup_func, mockup_w, mockup_h = MOCKUPS[stage_spec["mockup"]]
+            mockup_w, mockup_h = MOCKUP_SIZES[stage_spec["mockup"]]
+            mockup_filename = MOCKUP_FILES[stage_spec["mockup"]]
+            mockup_path = Path(settings.BASE_DIR) / "media" / "mockups" / mockup_filename
             stage = ProductStage.objects.filter(product=product, name=stage_spec["name"]).first()
             if stage is None:
                 area = PrintArea.objects.create(
@@ -791,16 +707,20 @@ class Command(BaseCommand):
                 stage.save()
 
             if self.force or not stage.mockup_image:
-                image = mockup_func()
-                _replace(stage.mockup_image, f"{spec['slug']}-{stage_spec['slug']}.png", ContentFile(_png_bytes(image)))
-                stage.save(update_fields=["mockup_image", "updated_at"])
+                if mockup_path.exists():
+                    with mockup_path.open("rb") as f:
+                        _replace(stage.mockup_image, f"{spec['slug']}-{stage_spec['slug']}.jpg", ContentFile(f.read()))
+                    stage.save(update_fields=["mockup_image", "updated_at"])
             if front_stage is None:
                 front_stage = stage
 
-        if (self.force or not product.image) and front_stage and front_stage.mockup_image:
-            image = MOCKUPS[spec["stages"][0]["mockup"]][0]()
-            _replace(product.image, f"{spec['slug']}.png", ContentFile(_png_bytes(image)))
-            product.save(update_fields=["image", "updated_at"])
+        if (self.force or not product.image) and front_stage:
+            mockup_filename = MOCKUP_FILES[spec["stages"][0]["mockup"]]
+            mockup_path = Path(settings.BASE_DIR) / "media" / "mockups" / mockup_filename
+            if mockup_path.exists():
+                with mockup_path.open("rb") as f:
+                    _replace(product.image, f"{spec['slug']}.jpg", ContentFile(f.read()))
+                product.save(update_fields=["image", "updated_at"])
 
         for order, (name, sku, color_name, color_hex, size, delta) in enumerate(spec["variants"]):
             ProductVariant.objects.update_or_create(
