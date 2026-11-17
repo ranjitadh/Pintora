@@ -272,41 +272,6 @@ CLIPARTS = [
 
 PRODUCTS = [
     {
-        "slug": "classic-tee",
-        "name": "Classic Heavyweight Tee",
-        "category": "Apparel",
-        "short": "290 gsm organic cotton with a structured drape.",
-        "description": (
-            "A everyday heavyweight tee built for bold prints. Combed organic cotton, "
-            "reinforced shoulder seams, and a slightly boxy fit. Add artwork to the front, "
-            "back, or both."
-        ),
-        "base_price": "24.90",
-        "compare_at_price": "29.90",
-        "featured": True,
-        "stages": [
-            {"name": "Front", "slug": "front", "mockup": "classic-tee", "area": (305, 406, 360, 340, 300, 400)},
-            {"name": "Back", "slug": "back", "mockup": "classic-tee-back", "area": (305, 406, 360, 340, 300, 400)},
-        ],
-        "variants": [
-            ("Black / S", "TSH-BLK-S", "Black", "#1f1f1f", "S", "0"),
-            ("Black / M", "TSH-BLK-M", "Black", "#1f1f1f", "M", "0"),
-            ("Black / L", "TSH-BLK-L", "Black", "#1f1f1f", "L", "0"),
-            ("Black / XL", "TSH-BLK-XL", "Black", "#1f1f1f", "XL", "0"),
-            ("Black / 2XL", "TSH-BLK-2XL", "Black", "#1f1f1f", "2XL", "2"),
-            ("Bone / S", "TSH-BNE-S", "Bone", "#e9e2d6", "S", "0"),
-            ("Bone / M", "TSH-BNE-M", "Bone", "#e9e2d6", "M", "0"),
-            ("Bone / L", "TSH-BNE-L", "Bone", "#e9e2d6", "L", "0"),
-            ("Bone / XL", "TSH-BNE-XL", "Bone", "#e9e2d6", "XL", "0"),
-            ("Bone / 2XL", "TSH-BNE-2XL", "Bone", "#e9e2d6", "2XL", "2"),
-            ("Navy / M", "TSH-NVY-M", "Navy", "#27364f", "M", "0"),
-            ("Navy / L", "TSH-NVY-L", "Navy", "#27364f", "L", "0"),
-            ("Navy / XL", "TSH-NVY-XL", "Navy", "#27364f", "XL", "0"),
-        ],
-        "discounts": [{"min_qty": 5, "percent": 5}, {"min_qty": 10, "percent": 8}, {"min_qty": 25, "percent": 12}],
-        "methods": [("Direct-to-Garment", True)],
-    },
-    {
         "slug": "premium-hoodie",
         "name": "Premium Studio Hoodie",
         "category": "Apparel",
@@ -426,6 +391,41 @@ PRODUCTS = [
         ],
         "discounts": [{"min_qty": 3, "percent": 5}, {"min_qty": 10, "percent": 12}],
         "methods": [("UV Print", True)],
+    },
+    {
+        "slug": "classic-tee",
+        "name": "Classic Heavyweight Tee",
+        "category": "Apparel",
+        "short": "290 gsm organic cotton with a structured drape.",
+        "description": (
+            "A everyday heavyweight tee built for bold prints. Combed organic cotton, "
+            "reinforced shoulder seams, and a slightly boxy fit. Add artwork to the front, "
+            "back, or both."
+        ),
+        "base_price": "24.90",
+        "compare_at_price": "29.90",
+        "featured": True,
+        "stages": [
+            {"name": "Front", "slug": "front", "mockup": "classic-tee", "area": (305, 406, 360, 340, 300, 400)},
+            {"name": "Back", "slug": "back", "mockup": "classic-tee-back", "area": (305, 406, 360, 340, 300, 400)},
+        ],
+        "variants": [
+            ("Black / S", "TSH-BLK-S", "Black", "#1f1f1f", "S", "0"),
+            ("Black / M", "TSH-BLK-M", "Black", "#1f1f1f", "M", "0"),
+            ("Black / L", "TSH-BLK-L", "Black", "#1f1f1f", "L", "0"),
+            ("Black / XL", "TSH-BLK-XL", "Black", "#1f1f1f", "XL", "0"),
+            ("Black / 2XL", "TSH-BLK-2XL", "Black", "#1f1f1f", "2XL", "2"),
+            ("Bone / S", "TSH-BNE-S", "Bone", "#e9e2d6", "S", "0"),
+            ("Bone / M", "TSH-BNE-M", "Bone", "#e9e2d6", "M", "0"),
+            ("Bone / L", "TSH-BNE-L", "Bone", "#e9e2d6", "L", "0"),
+            ("Bone / XL", "TSH-BNE-XL", "Bone", "#e9e2d6", "XL", "0"),
+            ("Bone / 2XL", "TSH-BNE-2XL", "Bone", "#e9e2d6", "2XL", "2"),
+            ("Navy / M", "TSH-NVY-M", "Navy", "#27364f", "M", "0"),
+            ("Navy / L", "TSH-NVY-L", "Navy", "#27364f", "L", "0"),
+            ("Navy / XL", "TSH-NVY-XL", "Navy", "#27364f", "XL", "0"),
+        ],
+        "discounts": [{"min_qty": 5, "percent": 5}, {"min_qty": 10, "percent": 8}, {"min_qty": 25, "percent": 12}],
+        "methods": [("Direct-to-Garment", True)],
     },
 ]
 
