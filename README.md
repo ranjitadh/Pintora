@@ -11,9 +11,9 @@ Print-on-demand storefront with a browser design studio, server-authoritative pr
 
 | Layer | Technology |
 | --- | --- |
-| Backend | Python 3.9+, Django 4.2, DRF 3.15, SimpleJWT, Pillow, Celery |
+| Backend | Python 3.12, Django 4.2, DRF 3.15, SimpleJWT, Pillow, Celery |
 | Frontend | Next.js 14 App Router, React 18, TypeScript, Tailwind CSS, Fabric.js 5 |
-| Data | SQLite (default) or PostgreSQL 16, Redis 7 for Celery |
+| Data | SQLite (local default) or PostgreSQL 16, Redis 7 for Celery |
 | Runtime | Node 20, Python 3.12 in Docker |
 
 ## Local development
@@ -70,6 +70,62 @@ docker compose --profile seed run --rm seed
 
 Inside Compose, `NEXT_PUBLIC_BACKEND_ORIGIN` must be the backend service address (`http://backend:8000`); the root `.env.example` is preset for this. Use `http://localhost:8000` only when running Next.js outside Docker.
 
+## Render deployment
+
+`render.yaml` at the repository root provisions the full production stack through Render Blueprints:
+
+- `printora-db` — PostgreSQL 16
+- `printora-api` — Django/Gunicorn web service with a 5 GB persistent disk at `/var/data`
+- `printora-web` — Next.js frontend that proxies `/api` and `/media` to the backend over Render's private network
+
+The backend service runs `python manage.py migrate --noinput` as a pre-deploy command and `python manage.py seed_if_empty` as its initial deploy hook, so the first deploy creates the six-product demo catalog, database tables, static files, and admin account automatically.
+
+### Quick start
+
+1. Push the deployment commit to `main` (already pushed with `render.yaml`).
+2. In the Render Dashboard, choose **New → Blueprint**, connect the GitHub repository, select branch `main`, and path `render.yaml`.
+3. When prompted, enter a real `DJANGO_ADMIN_EMAIL` and a strong `DJANGO_ADMIN_PASSWORD`.
+4. Click **Deploy Blueprint / Apply**.
+
+Render creates the database, web services, disk, and runs the initial seed. After the deploy:
+
+- Storefront: `https://printora-web.onrender.com`
+- API / admin: `https://printora-api.onrender.com`
+- Admin login: `https://printora-api.onrender.com/admin/`
+
+Full environment-variable reference, custom-domain steps, media-backup instructions, custom-domain setup, and troubleshooting are in [`docs/RENDER_DEPLOYMENT.md`](docs/RENDER_DEPLOYMENT.md).
+
+### Quick env checklist
+
+Backend (`printora-api`):
+
+| Variable | Value |
+| --- | --- |
+| `DJANGO_DEBUG` | `false` |
+| `DJANGO_SECRET_KEY` | 50+ char random secret |
+| `DJANGO_ALLOWED_HOSTS` | `.onrender.com,printora-api,printora-web,localhost,127.0.0.1` plus any custom domain |
+| `DJANGO_MEDIA_ROOT` | `/var/data/media` |
+| `DJANGO_SERVE_MEDIA` | `true` |
+| `DATABASE_URL` | from `printora-db` connection string |
+| `SITE_URL` | `https://printora-web.onrender.com` |
+| `BACKEND_URL` | `https://printora-api.onrender.com` |
+| `CORS_ALLOWED_ORIGINS` | `https://printora-web.onrender.com` plus any custom domain |
+| `CELERY_TASK_ALWAYS_EAGER` | `true` |
+| `DJANGO_ADMIN_EMAIL` | real admin email |
+| `DJANGO_ADMIN_PASSWORD` | strong unique password |
+
+Frontend (`printora-web`):
+
+| Variable | Value |
+| --- | --- |
+| `NEXT_PUBLIC_BACKEND_ORIGIN` | `https://printora-api.onrender.com` (public) or `http://printora-api:10000` (private, if same region/workspace) |
+| `BACKEND_INTERNAL_URL` | same as `NEXT_PUBLIC_BACKEND_ORIGIN` |
+| `NEXT_PUBLIC_API_URL` | `/api` |
+| `NEXT_PUBLIC_SITE_URL` | `https://printora-web.onrender.com` |
+| `NODE_VERSION` | `20.18.0` |
+
+`NEXT_PUBLIC_BACKEND_ORIGIN` and `NEXT_PUBLIC_SITE_URL` are baked into the Next.js build — redeploy the frontend after changing them.
+
 ## Documentation
 
 - [Project plan](docs/PROJECT_PLAN.md)
@@ -86,3 +142,6 @@ Inside Compose, `NEXT_PUBLIC_BACKEND_ORIGIN` must be the backend service address
 - Payments are intentionally in demo mode: checkout creates an order without charging a card.
 - Uploaded media is served by Django when `DJANGO_DEBUG=true` or `DJANGO_SERVE_MEDIA=true`; use a persistent disk, a web server, or object storage in production.
 - JWT access/refresh tokens are stored in HttpOnly cookies. A non-HttpOnly session hint skips auth probes for anonymous visitors, and cookie-authenticated writes require a CSRF token.
+- Do not enable `DJANGO_SSL_REDIRECT` while the frontend proxies API/media over Render's private HTTP network; Render terminates TLS at its edge.
+- The Deepseek key that appeared in `backend/.env.example` must be rotated before public traffic. Removing it from the tree does not remove it from Git history; rewrite history with `git filter-repo` and force-push only after all collaborators are notified.
+- Media files are not stored in Git. Back up both PostgreSQL and the `/var/data` media disk.
